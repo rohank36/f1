@@ -1,0 +1,47 @@
+meeting_id, session_id 
+
+Are team results in 2015 predictive of team results today when the car and drivers are different? Not predicative.
+
+historical years to look at: 2022-2024. 2022 new regulations came in. 
+
+*****
+issue: some drivers have more historical data than others, how to bridge gap for newer drivers.
+- f2 comparable to f1? don't use f2 data for rookies. 
+- maybe use practice data only for rookies
+- rookies only have 2025 data, so what to use for test set? 
+--> Each rookie inherits their team's average performance (e.g. mean qualifying position, race finish etc). Figure out a way to make this reasonable. As most of the time a rookie won't be able to live up to past average performances of the team.
+
+for predicting in sports, how to use historical data? When in the past the team/driver may have been completely different? 
+--> include year in row (encoded)
+
+might have to lag to get proper autoregressive modelling? because you want to capture how peoples past performances impact current ones. e.g. MOMENTUM. Look into how to do this more.
+--> Use exponentially weighted average of past 3-5 races to capture their performance over time for different features. 
+
+Figure out what you want your model to output for the race rankings. 
+*****
+
+when weather=wet/rainy, driver 80% team 20% . Else driver 20% car 40% team 40%.  
+
+don't need to use practice times. Qualifying/Sprints and Race data most important. 
+
+Number of stints + compounds used = strategy 
+
+stint = portion of the race on specific tire
+
+SOFT = flying but short duration 
+MED = both
+HARD = slowest but longest duration
+Certain circuits have tires that are better than others. 
+
+Must have at least 1 pitstop during race and must change tire compound 
+
+Methodology:
+- understand data, build out dataset
+- build end to end pipeline with easy dumb baselines
+- overfit on training data
+- regularize (heavy regularization will be needed due to small num of examples but relatively high num of features)
+- tune
+
+historical data --> 1 day before race, make the prediction. Predict race finishing positions (maybe just look at top 10 and predict it super welll, reasoning = rookies will mostly be outside of top 10 and we don't have much data on them ) 
+
+after basic predictive model is built, look into building a hedge/risk model to optimize betting placements (take inspiration from financial hedging/risk models)

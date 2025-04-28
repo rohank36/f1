@@ -1,0 +1,72 @@
+Primary Keys: meeting_key, session_key
+
+Each example should represent: A driver + grand prix + session 
+
+All features
+
+Driver:
+driver_number, session_key
+- driver_number
+- name_acronym
+- team_name //one-hot encode this in training set for now
+
+Meetings:
+meeting_key
+- circuit_key
+- country_code
+- country_key
+- meeting_name
+- year
+
+Sessions:
+meeting_key, session_key
+- session_name (need this because sprint session_type is Race so need to be able to distinguish)
+- session_type 
+
+Laps: 
+session_key, meeting_key
+Multiple laps for a given session, so they have to be averaged across the session 
+- avg_s1_duration
+- avg_s2_duration
+- avg_s3_duration 
+- avg_i1_speed
+- avg_i2_speed
+- is_pit_out_lap (if true then don't include lap in avg calculations)
+- avg_lap_duration
+- avg_st_speed
+
+Position:
+session_key, meeting_key
+- position (position for qualifying)
+
+Stints:
+driver_number, meeting_key, session_key
+- stint_number (take from last entry of session)
+
+Weather:
+session_key, meeting_key,
+- wind_speed
+- track_temperature
+- rainfall 
+
+Calculated Featured (Basically just lagged features for race data):
+//do we want to exponentially weight these features so more recent results weigh more? 
+//due to lack of data maybe use x=3?
+driver_number, meeting_key, session_key
+- x_lagged_pos_gained: average position gained (start pos [first entry] - finishing pos [last entry]) averaged over last x races
+- x_lagged_race_finishing_pos: average race finishing position over last x races
+- x_lagged_avg_pit_duration: average pit duration over last x races
+- x_lagged_avg_lap_duration
+
+Target
+- race_finishing_pos
+
+
+- Race finishing position ** need to figure this one out more
+- maybe one hot encode this? issue: model predicts multiple drivers in the same position? 
+    probs rare that this will happen with the exact same %prob so could work? 
+    prob best to use an actual ranking algorithm though.
+
+
+FIGURE OUT HOW TO ORGANIZE MEETINGS/SESSIONS
+- loop through session keys, build ordering of session keys. 
