@@ -45,3 +45,12 @@ Methodology:
 historical data --> 1 day before race, make the prediction. Predict race finishing positions (maybe just look at top 10 and predict it super welll, reasoning = rookies will mostly be outside of top 10 and we don't have much data on them ) 
 
 after basic predictive model is built, look into building a hedge/risk model to optimize betting placements (take inspiration from financial hedging/risk models)
+
+
+
+
+#### Training Notes
+
+removing location feature, did not really impact model 1. Raised training acc of model 2 to 100% did not affect val acc. 
+
+removing ["Event_Type","Sprint_Qual_Position","Sprint_Race_Position"] negatively impacted val performance for both m1 and m2. Didn't affect training acc. 
