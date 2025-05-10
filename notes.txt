@@ -49,8 +49,28 @@ after basic predictive model is built, look into building a hedge/risk model to 
 
 
 
-#### Training Notes
-
+### Training Notes
 removing location feature, did not really impact model 1. Raised training acc of model 2 to 100% did not affect val acc. 
 
 removing ["Event_Type","Sprint_Qual_Position","Sprint_Race_Position"] negatively impacted val performance for both m1 and m2. Didn't affect training acc. 
+
+Changing the target to binary (whether or not they are top x) increases acc A LOT (87-90% across trn/val/test). AUROC=0.9 as well which is good
+
+
+### To Dos
+Figure out a way to liimt the number of drivers selected to be in top x (e.g. model somtimes predicts x+1 or x-1 drivers to be in top x)
+
+Need to figure out a way to ordinally encode the drivers, so that their ranking is relative to the other drivers performance for that race.
+    - Will ordinally encoding their race times help with this?
+
+Engineer better features that encode better signals if need be 
+    - play around with more features so see if you can squeeze some performance
+
+Write code to add the new test data
+
+Make validation code a class
+
+### To think about
+Take a momment to fundamentally understand what you're doing + the math/stats behind it.
+What happens if you ensemble strong learners?
+Why does the same model with the same features perform so much better with the targets changed
