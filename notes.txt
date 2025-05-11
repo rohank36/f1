@@ -68,8 +68,8 @@ It seems that it only matters if you're on certain teams (e.g. Red Bull, Mercede
 ### To Dos
 Need to increase recall a lot while maintaing precision
     - hyperparam tuning 
-    - boosting (using another model e.g. regression model to correct systematic errors)
     - engineer better features 
+    - boosting (using another model e.g. regression model to correct systematic errors)
 
 Figure out a way to liimt the number of drivers selected to be in top x (e.g. model somtimes predicts x+1 or x-1 or even x-2 drivers to be in top x)
 
