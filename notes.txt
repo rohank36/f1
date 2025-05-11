@@ -58,19 +58,21 @@ Changing the target to binary (whether or not they are top x) increases acc A LO
 
 
 ### To Dos
-Figure out a way to liimt the number of drivers selected to be in top x (e.g. model somtimes predicts x+1 or x-1 drivers to be in top x)
+Figure out a way to liimt the number of drivers selected to be in top x (e.g. model somtimes predicts x+1 or x-1 or even x-2 drivers to be in top x)
 
 Need to figure out a way to ordinally encode the drivers, so that their ranking is relative to the other drivers performance for that race.
     - Will ordinally encoding their race times help with this?
 
 Engineer better features that encode better signals if need be 
     - play around with more features so see if you can squeeze some performance
+    - try driver vs teammate metric e.g. diff in finishing position --> this captures drivers skill when the car is the same 
+    - relative race speed times 
+    - avg pos gained equation
 
 Write code to add the new test data
 
-Make validation code a class
+For actually placing the bets you may need a model to choose which site to use based on the odds they have. Can do arb here? 
 
 ### To think about
 Take a momment to fundamentally understand what you're doing + the math/stats behind it.
-What happens if you ensemble strong learners?
-Why does the same model with the same features perform so much better with the targets changed
+Can maybe do multi site bets??
