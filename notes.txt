@@ -63,6 +63,7 @@ Precision,Recall,f1_score are the metrics you should care about. Because your da
 lag stint and event type seem to be useless features. maybe get rid of them? Tried this and not significant improvement but model didn't get worse either. 
 
 It seems that it only matters if you're on certain teams (e.g. Red Bull, Mercedes, Ferrari, McLaren). So maybe only one hot encode those teams?
+    - after doing this, we saw an increase in f1 score!!
 
 ### To Dos
 Need to increase recall a lot while maintaing precision
