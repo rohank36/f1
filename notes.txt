@@ -56,8 +56,20 @@ removing ["Event_Type","Sprint_Qual_Position","Sprint_Race_Position"] negatively
 
 Changing the target to binary (whether or not they are top x) increases acc A LOT (87-90% across trn/val/test). AUROC=0.9 as well which is good
 
+using the balanced classes helped improve recall a lot, but at the cost of precision. 
+
+Precision,Recall,f1_score are the metrics you should care about. Because your data is class imbalanced and you care about TPs and FPs.
+
+lag stint and event type seem to be useless features. maybe get rid of them? Tried this and not significant improvement but model didn't get worse either. 
+
+It seems that it only matters if you're on certain teams (e.g. Red Bull, Mercedes, Ferrari, McLaren). So maybe only one hot encode those teams?
 
 ### To Dos
+Need to increase recall a lot while maintaing precision
+    - hyperparam tuning 
+    - boosting (using another model e.g. regression model to correct systematic errors)
+    - engineer better features 
+
 Figure out a way to liimt the number of drivers selected to be in top x (e.g. model somtimes predicts x+1 or x-1 or even x-2 drivers to be in top x)
 
 Need to figure out a way to ordinally encode the drivers, so that their ranking is relative to the other drivers performance for that race.
