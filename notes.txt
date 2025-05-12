@@ -65,6 +65,9 @@ lag stint and event type seem to be useless features. maybe get rid of them? Tri
 It seems that it only matters if you're on certain teams (e.g. Red Bull, Mercedes, Ferrari, McLaren). So maybe only one hot encode those teams?
     - after doing this, we saw an increase in f1 score!!
 
+f1 score increases dramatically when the classification task is 1==if top 6 else 0. from 0.666 --> 0.85
+    - obvi this makes sense because the model can tell well who is usually in the top 6 pretty well.
+
 ### To Dos
 Need to increase recall a lot while maintaing precision
     - hyperparam tuning 
