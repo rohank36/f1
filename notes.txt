@@ -76,11 +76,13 @@ Tried summing the sector times to one feature to see if that would reduce noise,
 
 Tried binary encoding (1/0) for circuit type, but that decreased val f1 by 0.01. Small decrease. Thought this would make a positive difference. Guess not lol.
 
+Tried just getting rid of the sector times and race date code. Val f1 score was the exact same with and without them. Meaning they must not be significant. Your feature analysis was right.
+
 SECTORTIMES MIGHT BE FAST FOR DRIVER THAT STILL FINISHES POORLY BECAUSE DRIVER IS SO FAR BEHIND THEY ARE IN CLEAN AIR (NO CARS EXHAUST BLOWING ONTO THEM), DRIVER IN FIRST ALSO HAS CLEAN AIR.
 
 TOTAL RACE TIME (how long it took them to finish the race) relative to the race winner (have to think about how to encode this) is a good proxy for race pace. 
 
-Maybe add weighted average pit stop time? 
+
 
 ### To Dos
 Need to increase recall a lot while maintaing precision
@@ -92,6 +94,7 @@ Need to increase recall a lot while maintaing precision
         - n_races (to show experience)
         - Experiment with changing alpha value for driver encoding ewa. 
         - consider looking into other features as well that aren't currently in your dataset.
+        - weighted average pit stop time?
     - boosting (using another model e.g. regression model to correct systematic errors)
     - Try different models that better handle class imbalance 
 
