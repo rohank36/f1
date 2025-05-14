@@ -70,21 +70,35 @@ f1 score increases dramatically when the classification task is 1==if top 6 else
 
 for some reason hyperparam tuning made performance worse...weird?
 
+Tried encoding race features by normalizing(dividing by max for that feature for that race) and it decrease f1 score for both trn (by 0.01) and val by 0.08!!! so not good feature engineering for this one.
+
+Tried summing the sector times to one feature to see if that would reduce noise, but it decreases the val f1 score by 0.05. so again not good feature engineering for this one.
+
+Tried binary encoding (1/0) for circuit type, but that decreased val f1 by 0.01. Small decrease. Thought this would make a positive difference. Guess not lol.
+
+SECTORTIMES MIGHT BE FAST FOR DRIVER THAT STILL FINISHES POORLY BECAUSE DRIVER IS SO FAR BEHIND THEY ARE IN CLEAN AIR (NO CARS EXHAUST BLOWING ONTO THEM), DRIVER IN FIRST ALSO HAS CLEAN AIR.
+
+TOTAL RACE TIME (how long it took them to finish the race) relative to the race winner (have to think about how to encode this) is a good proxy for race pace. 
+
+Maybe add weighted average pit stop time? 
+
 ### To Dos
 Need to increase recall a lot while maintaing precision
-    - engineer better features 
+    - engineer better features (follow a system like sequential feature selection etc)
+        - play around with more features so see if you can squeeze some performance
+        - try driver vs teammate metric e.g. diff in finishing position --> this captures drivers skill when the car is the same (but might not be a good metric to capture because if someone qualifies p10 and their teammate is p20, then they're much better then teamate but still bad overall.)
+        - avg pos gained equation
+        - add lagged ewa qual position? might given indication about how they've been qualifying recently. if qual_position much better then lagged qual position might indicate that they're gonna do better in race today.
+        - n_races (to show experience)
+        - Experiment with changing alpha value for driver encoding ewa. 
+        - consider looking into other features as well that aren't currently in your dataset.
     - boosting (using another model e.g. regression model to correct systematic errors)
+    - Try different models that better handle class imbalance 
 
 Figure out a way to liimt the number of drivers selected to be in top x (e.g. model somtimes predicts x+1 or x-1 or even x-2 drivers to be in top x)
 
 Need to figure out a way to ordinally encode the drivers, so that their ranking is relative to the other drivers performance for that race.
     - Will ordinally encoding their race times help with this?
-
-Engineer better features that encode better signals if need be 
-    - play around with more features so see if you can squeeze some performance
-    - try driver vs teammate metric e.g. diff in finishing position --> this captures drivers skill when the car is the same 
-    - relative race speed times 
-    - avg pos gained equation
 
 Write code to add the new test data
 
@@ -93,3 +107,5 @@ For actually placing the bets you may need a model to choose which site to use b
 ### To think about
 Take a momment to fundamentally understand what you're doing + the math/stats behind it.
 Can maybe do multi site bets??
+
+
