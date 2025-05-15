@@ -5,7 +5,8 @@ from scipy import stats
 import seaborn as sns
 from Dataset import Dataset
 from typing import List, Dict
-
+from sklearn.metrics import roc_auc_score
+# TODO: Add AUROC feature analysis method
 
 class FeatureAnalysis:
     def __init__(self,dataset:Dataset):
@@ -15,6 +16,15 @@ class FeatureAnalysis:
         self.data.drop(columns=self.non_numeric_features, inplace=True)
         self.data.drop(columns=["Race_Position"], inplace=True)
         if "target" not in self.data.columns: raise Exception("Target column not found in data")
+
+    def analyze_auroc_score(self) -> pd.DataFrame:
+        # here the higher or lower the auc the better it separates the two classes. Things closer to 0.5 are not good.
+        feature_auc_df = pd.DataFrame()
+        for feature in self.data.columns:
+            if feature == "target": continue
+            auc = roc_auc_score(self.data["target"],self.data[feature])           
+            feature_auc_df = pd.concat([feature_auc_df,pd.DataFrame([{'feature':feature,'auc':auc}])],axis=0,ignore_index=True)
+        return feature_auc_df.sort_values(by='auc',ascending=False)
 
     def analyze_feature_separation(self,feature: str, print_plt: bool = True, print_stats: bool = True) -> Dict[str, float]:
         if print_plt:
@@ -145,11 +155,15 @@ class FeatureAnalysis:
         # 3. Feature Separation Ranking (from previous function)
         separation_ranking = self.get_feature_separation_ranking(self.data.columns)
         
+        # 4. AUROC Scores
+        auroc_scores = self.analyze_auroc_score()
+        
         # Combine results
         feature_scores = pd.DataFrame({
             'Correlation': correlation,
             'Precision': precision_with_target,
-            'Separation_Score': separation_ranking.set_index('feature')['separation_score']
+            'Separation_Score': separation_ranking.set_index('feature')['separation_score'],
+            'AUROC': auroc_scores.set_index('feature')['auc']
         }).sort_values('Correlation', ascending=False)
         feature_scores.drop(target, inplace=True)
         return feature_scores

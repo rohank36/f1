@@ -5,7 +5,7 @@ from typing import List
 class Dataset_v1(Dataset):
 
     def __init__(self,trn_data_path:str,test_data_path:str):
-        super().__init__(trn_data_path,test_data_path)
+        super().__init__("Dataset_v1",trn_data_path,test_data_path)
 
     def clean_dataset(self) -> None:
         # clean event type
@@ -35,14 +35,38 @@ class Dataset_v1(Dataset):
         
         self.data = self.data.reset_index(drop=True)
 
-    def train_val_test_split(self,cols_to_drop:List[str]) -> tuple[pd.DataFrame,pd.DataFrame,pd.DataFrame]:
+    def train_val_test_split(self) -> tuple[pd.DataFrame,pd.Series,pd.DataFrame,pd.Series,pd.DataFrame,pd.Series]:
         data_copy = self.data.copy(deep=True)
-        data_copy.drop(columns=cols_to_drop, inplace=True)
-        #data_copy.drop(columns=["Location"], inplace=True)
-        #data_copy.drop(columns=["TeamName"], inplace=True)
-        #data_copy.drop(columns=["Circuit_Type"], inplace=True)        
-        #return train,val,test
-    
+        #if "Race_Position" in data_copy.columns: data_copy.drop(columns=["Race_Position"], inplace=True)
+        if "target" not in data_copy.columns: raise Exception("Target column not found in data")
+        if "target" in self.features_for_training: raise Exception("Target column found in features for training")
+        #data_copy = data_copy[self.features_for_training]
+        
+        trn_data = data_copy.loc[data_copy["Year"]!=2025,:]
+        test_data = data_copy.loc[data_copy["Year"]==2025,:]
+
+        val_mask = (data_copy["Year"] == 2024) & (data_copy["Round_Number"] > 12)
+        val_data = data_copy[val_mask]
+        trn_data = data_copy[~val_mask]
+
+        y_trn = trn_data["target"]
+        y_val = val_data["target"]
+        y_test = test_data["target"]
+
+        x_trn = trn_data[self.features_for_training]
+        x_val = val_data[self.features_for_training]
+        x_test = test_data[self.features_for_training]
+
+        print(x_trn.shape,y_trn.shape)
+        print(x_val.shape,y_val.shape)
+        print(x_test.shape, y_test.shape)
+             
+        return x_trn,y_trn,x_val,y_val,x_test,y_test
+
+    def set_features_for_training(self,selected_features:List[str]) -> None:
+        self.features_for_training:List[str] = selected_features
+        print("Features for training set:\n",self.features_for_training)
+
     def create_top_team(self) -> None:
         self.data['TopTeam_Red Bull Racing'] = (self.data['TeamName'] == 'Red Bull Racing').astype(int)
         self.data['TopTeam_Ferrari'] = (self.data['TeamName'] == 'Ferrari').astype(int)
