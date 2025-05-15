@@ -111,9 +111,9 @@ class Dataset_v1(Dataset):
             .reset_index()
         )
         driver_encoding_ranked.sort_values(by='driver_encoding', inplace=True)
-        print(driver_encoding_ranked)
+        #print(driver_encoding_ranked)
 
-        self.data.drop(columns=["ema_past"],inplace=True) # drop cols used to calculate driver encoding
+        self.data.drop(columns=["ema_past","n_past"],inplace=True) # drop cols used to calculate driver encoding
         self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
 
     def create_relative_driver_race_features(self) -> None:
@@ -137,6 +137,12 @@ class Dataset_v1(Dataset):
         self.data["lag_stint"] = self.lag_feature('Stint',0.5)
         self.data['lag_lap_time'] = self.lag_feature('lap_time')
     
+    def create_target(self) -> None:
+        self.data["target"] = ((self.data["Race_Position"] <= 3) & (self.data["Race_Position"] > 0)).astype(int)
+    
+    def create_n_past(self) -> None:
+        self.data['n_past']  = self.data.groupby('BroadcastName').cumcount()
+
     def build_features_into_dataset(self) -> None:
         self.create_top_team()
         self.create_circuit_type()
@@ -144,6 +150,7 @@ class Dataset_v1(Dataset):
         self.create_driver_encoding()
         self.create_relative_driver_race_features()
         self.create_lap_time()
+        self.create_n_past()
         self.create_lagged_features()
         self.data = self.data.dropna()
         self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
@@ -151,6 +158,7 @@ class Dataset_v1(Dataset):
         min_code = self.data['Race_Date_Code'].min()
         max_code = self.data['Race_Date_Code'].max()
         self.data['Race_Date_Code'] = (self.data['Race_Date_Code'] - min_code) / (max_code - min_code)
+        self.create_target()
     
 if __name__ == "__main__":
     dataset = Dataset_v1("data/train_data.csv","data/test_data.csv")
