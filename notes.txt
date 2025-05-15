@@ -85,6 +85,8 @@ TOTAL RACE TIME (how long it took them to finish the race) relative to the race 
 
 
 ### To Dos
+Refactor and clean code to make it easy to analyze/experiment/test with different features (refer to iphone notes)
+
 Need to increase recall a lot while maintaing precision
     - engineer better features (follow a system like sequential feature selection etc)
         - play around with more features so see if you can squeeze some performance
