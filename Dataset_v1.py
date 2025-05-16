@@ -140,6 +140,22 @@ class Dataset_v1(Dataset):
         self.data.drop(columns=["ema_past","n_past"],inplace=True) # drop cols used to calculate driver encoding
         self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
 
+    def create_ewa_driver_results(self) -> None:
+        # Raw recent results, heavily weighted. Doesn't care about driver experience. 
+        # Sort by driver and race date
+        sorted_data = self.data.sort_values(['BroadcastName','Race_Date_Code'])
+        
+        # Calculate EWMA for each driver
+        ewa_results = sorted_data.groupby('BroadcastName')['Race_Position'].apply(
+            lambda x: x.shift(1).ewm(alpha=0.5, adjust=True).mean()
+        ).reset_index(drop=True)
+        
+        # Create new column with aligned index
+        self.data['ewa_driver_results'] = ewa_results
+        
+        # Sort back to chronological order
+        self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
+
     def create_relative_driver_race_features(self) -> None:
         relative_race_features = self.data.groupby('Race_Date_Code')[['Sector1Time','Sector2Time','Sector3Time','SpeedST']].transform(lambda x: x / x.max())
         self.data[['Sector1Time_relative','Sector2Time_relative','Sector3Time_relative','SpeedST_relative']] = relative_race_features   
@@ -172,16 +188,17 @@ class Dataset_v1(Dataset):
         self.create_circuit_type()
         self.create_race_date_code()
         self.create_driver_encoding()
-        self.create_relative_driver_race_features()
+        self.create_ewa_driver_results()
+        #self.create_relative_driver_race_features()
         self.create_lap_time()
         self.create_n_past()
         self.create_lagged_features()
         self.data = self.data.dropna()
         self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
         # Encode Round + Year in [0,1]. 1 being the most recent race
-        min_code = self.data['Race_Date_Code'].min()
-        max_code = self.data['Race_Date_Code'].max()
-        self.data['Race_Date_Code'] = (self.data['Race_Date_Code'] - min_code) / (max_code - min_code)
+        #min_code = self.data['Race_Date_Code'].min()
+        #max_code = self.data['Race_Date_Code'].max()
+        #self.data['Race_Date_Code'] = (self.data['Race_Date_Code'] - min_code) / (max_code - min_code)
         self.create_target()
     
 if __name__ == "__main__":

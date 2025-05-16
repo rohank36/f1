@@ -6,7 +6,6 @@ import seaborn as sns
 from Dataset import Dataset
 from typing import List, Dict
 from sklearn.metrics import roc_auc_score
-# TODO: Add AUROC feature analysis method
 
 class FeatureAnalysis:
     def __init__(self,dataset:Dataset):
@@ -14,6 +13,7 @@ class FeatureAnalysis:
         self.non_numeric_features = self.get_non_numeric_features()
         print(f"Non numeric features:\n {self.non_numeric_features}")
         self.data.drop(columns=self.non_numeric_features, inplace=True)
+        self.race_position = self.data["Race_Position"]
         self.data.drop(columns=["Race_Position"], inplace=True)
         if "target" not in self.data.columns: raise Exception("Target column not found in data")
 
@@ -25,6 +25,14 @@ class FeatureAnalysis:
             auc = roc_auc_score(self.data["target"],self.data[feature])           
             feature_auc_df = pd.concat([feature_auc_df,pd.DataFrame([{'feature':feature,'auc':auc}])],axis=0,ignore_index=True)
         return feature_auc_df.sort_values(by='auc',ascending=False)
+
+    def plot_feature_vs_target(self,feature:str) -> None:
+        plt.figure(figsize=(20,10))
+        plt.scatter(self.data[feature],self.race_position,alpha=0.5)
+        plt.xlabel(feature)
+        plt.ylabel("Target")
+        plt.title(f"{feature} vs Target")
+        plt.show()
 
     def analyze_feature_separation(self,feature: str, print_plt: bool = True, print_stats: bool = True) -> Dict[str, float]:
         if print_plt:
