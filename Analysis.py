@@ -26,6 +26,34 @@ class FeatureAnalysis:
             feature_auc_df = pd.concat([feature_auc_df,pd.DataFrame([{'feature':feature,'auc':auc}])],axis=0,ignore_index=True)
         return feature_auc_df.sort_values(by='auc',ascending=False)
 
+    def plot_prob_dist(self, feature: str) -> None:
+        plt.figure(figsize=(20, 10))
+        
+        # Calculate statistics
+        feature_data = self.data[feature]
+        skewness = feature_data.skew()
+        kurtosis = feature_data.kurt()
+        mean = feature_data.mean()
+        std = feature_data.std()
+        
+        # Plot histogram
+        plt.hist(feature_data, alpha=0.5, bins=30, edgecolor='black')
+        
+        # Add statistics to plot
+        plt.xlabel(feature)
+        plt.ylabel("Count")
+        plt.title(f"{feature} Distribution\nSkewness: {skewness:.3f}, Kurtosis: {kurtosis:.3f}")
+        
+        # Add vertical lines for mean and mean ± std
+        plt.axvline(mean, color='red', linestyle='--', label=f'Mean: {mean:.2f}')
+        plt.axvline(mean + std, color='orange', linestyle='--', label=f'Mean + 1σ: {mean + std:.2f}')
+        plt.axvline(mean - std, color='orange', linestyle='--', label=f'Mean - 1σ: {mean - std:.2f}')
+        
+        # Add legend
+        plt.legend()
+        
+        plt.show()
+
     def plot_feature_vs_target(self,feature:str) -> None:
         plt.figure(figsize=(20,10))
         plt.scatter(self.data[feature],self.race_position,alpha=0.5)
