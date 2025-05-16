@@ -6,6 +6,7 @@ import seaborn as sns
 from Dataset import Dataset
 from typing import List, Dict
 from sklearn.metrics import roc_auc_score
+from sklearn.linear_model import Lasso
 
 class FeatureAnalysis:
     def __init__(self,dataset:Dataset):
@@ -61,6 +62,27 @@ class FeatureAnalysis:
         plt.ylabel("Target")
         plt.title(f"{feature} vs Target")
         plt.show()
+
+    def lasso_feature_weights(self, alpha: float = 1.0) -> pd.DataFrame:
+        # Prepare data
+        X = self.data.drop(columns=['target'])
+        y = self.data['target']
+        
+        # Initialize and fit Lasso model
+        lasso = Lasso(alpha=alpha, random_state=42)
+        lasso.fit(X, y)
+        
+        # Create DataFrame of feature weights
+        weights_df = pd.DataFrame({
+            'feature': X.columns,
+            'weight': lasso.coef_
+        })
+        
+        # Sort by absolute value of weights (most important features first)
+        weights_df['abs_weight'] = weights_df['weight'].abs()
+        weights_df = weights_df.sort_values('abs_weight', ascending=False)
+        
+        return weights_df
 
     def analyze_feature_separation(self,feature: str, print_plt: bool = True, print_stats: bool = True) -> Dict[str, float]:
         if print_plt:
@@ -194,12 +216,16 @@ class FeatureAnalysis:
         # 4. AUROC Scores
         auroc_scores = self.analyze_auroc_score()
         
+        # 5. Lasso Regression Weights
+        lasso_weights = self.lasso_feature_weights()
+        
         # Combine results
         feature_scores = pd.DataFrame({
             'Correlation': correlation,
             'Precision': precision_with_target,
             'Separation_Score': separation_ranking.set_index('feature')['separation_score'],
-            'AUROC': auroc_scores.set_index('feature')['auc']
+            'AUROC': auroc_scores.set_index('feature')['auc'],
+            'Lasso_Weight': lasso_weights.set_index('feature')['weight']
         }).sort_values('Correlation', ascending=False)
         feature_scores.drop(target, inplace=True)
         return feature_scores
