@@ -5,7 +5,7 @@ import os
 import csv
 from datetime import datetime
 
-from sklearn.metrics import accuracy_score, mean_absolute_error, confusion_matrix, ConfusionMatrixDisplay, r2_score, roc_auc_score, f1_score, precision_score, recall_score, roc_curve, precision_recall_curve, average_precision_score
+from sklearn.metrics import accuracy_score, mean_absolute_error, confusion_matrix, ConfusionMatrixDisplay, r2_score, roc_auc_score, f1_score, precision_score, recall_score, roc_curve, precision_recall_curve, average_precision_score,fbeta_score
 
 class Model:
     def __init__(self, dataset:Dataset):
@@ -98,14 +98,16 @@ class Model:
         recall = recall_score(y_truth,y_pred)
         precision = precision_score(y_truth,y_pred)
         f1 = f1_score(y_truth,y_pred)
+        f05 = fbeta_score(y_truth,y_pred, beta=0.5, average="binary")
         
         print(f"Accuracy (exact position match): {accuracy:.3f}")
         print(f"R^2: {r2:.3f}")
         print("ROC AUC:", auroc if auroc is not None else "N/A")
         print(f"Recall: {recall} --> Of all the real positives, how many did I catch")
-        print(f"Precision: {precision} --> When I say it’s positive, how often am I right")
+        print(f"Precision: {precision} --> When I say it's positive, how often am I right")
         print("Average precision:", avg_precision if avg_precision is not None else "N/A")
         print(f"F1 score: {f1}")
+        print(f"F0.5 score: {f05} --> Weighted metric favoring precision over recall")
 
         return {
             "accuracy": accuracy,
@@ -114,7 +116,8 @@ class Model:
             "recall": recall,
             "precision": precision,
             "avg_precision": avg_precision,
-            "f1": f1
+            "f1": f1,
+            "f05": f05
         }
     
     def get_train_metrics(self) -> Dict[str,float]:

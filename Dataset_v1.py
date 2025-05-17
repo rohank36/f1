@@ -4,8 +4,9 @@ from typing import List
 
 class Dataset_v1(Dataset):
 
-    def __init__(self,trn_data_path:str,test_data_path:str):
+    def __init__(self,trn_data_path:str,test_data_path:str,verbose=True):
         super().__init__("Dataset_v1",trn_data_path,test_data_path)
+        self.verbose = verbose
 
     def clean_dataset(self) -> None:
         # clean event type
@@ -111,6 +112,7 @@ class Dataset_v1(Dataset):
     def create_driver_encoding(self) -> None:
         # Calculate Driver Encoding Feature 
         self.data = self.data.sort_values(['BroadcastName','Race_Date_Code']) 
+        #self.data = self.data.sort_values(['Race_Date_Code']) 
         self.data['n_past']  = self.data.groupby('BroadcastName').cumcount() # number of past races up to t-1
 
         mu = self.data['Race_Position'].mean() # global mean 
@@ -127,15 +129,7 @@ class Dataset_v1(Dataset):
         # this encoding reflects both the drivers recent form and the uncertainty that comes if they've only raced a little
         self.data['driver_encoding'] = (self.data['n_past'] * self.data['ema_past'] + k  * mu) / (self.data['n_past'] + k)
 
-        driver_encoding_ranked = (
-            self.data
-            .sort_values(['BroadcastName','Race_Date_Code'])
-            .groupby('BroadcastName')['driver_encoding']
-            .last()
-            .reset_index()
-        )
-        driver_encoding_ranked.sort_values(by='driver_encoding', inplace=True)
-        #print(driver_encoding_ranked)
+        self.check_feature("driver_encoding")
 
         self.data.drop(columns=["ema_past","n_past"],inplace=True) # drop cols used to calculate driver encoding
         self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
@@ -146,12 +140,14 @@ class Dataset_v1(Dataset):
         sorted_data = self.data.sort_values(['BroadcastName','Race_Date_Code'])
         
         # Calculate EWMA for each driver
-        ewa_results = sorted_data.groupby('BroadcastName')['Race_Position'].apply(
+        ewa_results = sorted_data.groupby('BroadcastName')['Race_Position'].transform(
             lambda x: x.shift(1).ewm(alpha=0.5, adjust=True).mean()
-        ).reset_index(drop=True)
+        )
         
         # Create new column with aligned index
         self.data['ewa_driver_results'] = ewa_results
+
+        self.check_feature("ewa_driver_results")
         
         # Sort back to chronological order
         self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
@@ -183,13 +179,58 @@ class Dataset_v1(Dataset):
     def create_n_past(self) -> None:
         self.data['n_past']  = self.data.groupby('BroadcastName').cumcount()
 
+    def check_feature(self,feature) -> None:
+        if not self.verbose: return
+        df = (
+            self.data
+            .sort_values(['BroadcastName','Race_Date_Code'])
+            .groupby('BroadcastName')[feature]
+            .last()
+            .reset_index()
+        )
+        df.sort_values(by=feature, inplace=True)
+        print(df)
+
+    def create_n_past_podiums(self) -> None:
+        self.data = self.data.sort_values(['BroadcastName','Race_Date_Code'])
+        self.data['n_past_podiums'] = (
+            self.data
+            .groupby('BroadcastName')['target']
+            .cumsum()
+            .shift(1)
+            .fillna(0)
+        )
+        self.check_feature("n_past_podiums")
+
+        # Sort back to chronological order
+        self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
+
+    def create_n_past_podiums_last_5(self) -> None:
+        # Ensure data is sorted properly for rolling operations
+        self.data = self.data.sort_values(['BroadcastName', 'Race_Date_Code'])
+
+        self.data['n_past_podiums_last_5'] = (
+            self.data
+            .groupby('BroadcastName')['target']
+            .transform(lambda x: x.shift(1).rolling(window=5, min_periods=1).sum())
+            .fillna(0)
+        )
+
+        self.check_feature("n_past_podiums_last_5")
+
+        # Sort back to chronological order
+        self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
+
     def build_features_into_dataset(self) -> None:
+        self.create_target()
         self.create_top_team()
         self.create_circuit_type()
         self.create_race_date_code()
         self.create_driver_encoding()
         self.create_ewa_driver_results()
         #self.create_relative_driver_race_features()
+        self.create_n_past_podiums()
+        self.create_n_past_podiums_last_5()
         self.create_lap_time()
         self.create_n_past()
         self.create_lagged_features()
@@ -199,7 +240,8 @@ class Dataset_v1(Dataset):
         #min_code = self.data['Race_Date_Code'].min()
         #max_code = self.data['Race_Date_Code'].max()
         #self.data['Race_Date_Code'] = (self.data['Race_Date_Code'] - min_code) / (max_code - min_code)
-        self.create_target()
+        columns_to_drop = ["Sector1Time","Sector2Time","Sector3Time","SpeedST","Stint"] #drop race data
+        self.data = self.data.drop(columns=columns_to_drop)
     
 if __name__ == "__main__":
     dataset = Dataset_v1("data/train_data.csv","data/test_data.csv")

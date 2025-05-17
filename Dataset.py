@@ -1,5 +1,6 @@
 from abc import abstractmethod
 import pandas as pd
+from typing import List
 
 class Dataset:
 
@@ -16,6 +17,14 @@ class Dataset:
 
     @abstractmethod
     def train_val_test_split(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_features_for_training(self,selected_features:List[str]) -> None:
+        raise NotImplementedError
+    
+    @abstractmethod
+    def build_features_into_dataset(self) -> None:
         raise NotImplementedError
 
     def get_data(self):
