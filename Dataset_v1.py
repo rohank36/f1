@@ -112,7 +112,6 @@ class Dataset_v1(Dataset):
     def create_driver_encoding(self) -> None:
         # Calculate Driver Encoding Feature 
         self.data = self.data.sort_values(['BroadcastName','Race_Date_Code']) 
-        #self.data = self.data.sort_values(['Race_Date_Code']) 
         self.data['n_past']  = self.data.groupby('BroadcastName').cumcount() # number of past races up to t-1
 
         mu = self.data['Race_Position'].mean() # global mean 
@@ -223,24 +222,26 @@ class Dataset_v1(Dataset):
 
     def build_features_into_dataset(self) -> None:
         self.create_target()
+
         self.create_top_team()
         self.create_circuit_type()
         self.create_race_date_code()
         self.create_driver_encoding()
-        self.create_ewa_driver_results()
+        self.create_ewa_driver_results() #this creates NaN for the 1st race
         #self.create_relative_driver_race_features()
         self.create_n_past_podiums()
         self.create_n_past_podiums_last_5()
         self.create_lap_time()
         self.create_n_past()
-        self.create_lagged_features()
-        self.data = self.data.dropna()
+        self.create_lagged_features() # this creates NaN for the 1st and 2nd race 
+
+        self.data = self.data.dropna() # you lose the first 2 of each driver because of this
         self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
         # Encode Round + Year in [0,1]. 1 being the most recent race
         #min_code = self.data['Race_Date_Code'].min()
         #max_code = self.data['Race_Date_Code'].max()
         #self.data['Race_Date_Code'] = (self.data['Race_Date_Code'] - min_code) / (max_code - min_code)
-        columns_to_drop = ["Sector1Time","Sector2Time","Sector3Time","SpeedST","Stint"] #drop race data
+        columns_to_drop = ["Sector1Time","Sector2Time","Sector3Time","SpeedST","Stint","lap_time"] #drop race data
         self.data = self.data.drop(columns=columns_to_drop)
     
 if __name__ == "__main__":
