@@ -1,23 +1,22 @@
 from Dataset_v1 import Dataset_v1
 from Analysis import FeatureAnalysis
-from Model_v1 import Model_v1        
+from Model_v1 import Model_v1      
+from dt import DT  
 
 if __name__ == "__main__":
-   dataset = Dataset_v1("data/train_data.csv","data/test_data.csv",True)
+   dataset = Dataset_v1("data/train_data.csv","data/test_data.csv",False)
    dataset.build_features_into_dataset()
 
    analysis = FeatureAnalysis(dataset)
    feature_ranking = analysis.select_features()
    print(feature_ranking)
 
-   
-   #features_for_training = ['Qual_Position','driver_encoding']
    features_for_training = [
       #"n_past_podiums_last_5",
       "Qual_Position",
       #"ewa_driver_results",
       "driver_encoding",
-      "pos_gained_encoding_simple",
+      #"pos_gained_encoding_simple",
       #"n_past_podiums",
       #"pos_gained_encoding",
       #"TopTeam_Red Bull Racing",
@@ -31,9 +30,11 @@ if __name__ == "__main__":
    dataset.set_features_for_training(features_for_training)
    
    model = Model_v1(dataset)
+   #model = DT(dataset)
    model.train()
    print(model.get_feature_importance())
-   #model.get_train_metrics()
+   #model.visualize_tree()
+   model.get_train_metrics()
    model.get_val_metrics()
    #model.get_test_metrics()
    

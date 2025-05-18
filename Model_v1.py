@@ -12,8 +12,8 @@ from sklearn.metrics import accuracy_score, mean_absolute_error, confusion_matri
 from sklearn.ensemble import RandomForestClassifier
 
 class Model_v1(Model):
-    def __init__(self,dataset: Dataset):
-        super().__init__(dataset)
+    def __init__(self,dataset: Dataset, name:str="RF"):
+        super().__init__(dataset,name)
         self.set_model_params(
             {
                 "n_estimators": 120,
@@ -119,10 +119,11 @@ class Model_v1(Model):
             valid_thresholds.append(t)
         best_idx = np.argmax(f1_scores)
         best_pr_threshold = valid_thresholds[best_idx]
-        print("Best PR threshold:", best_pr_threshold)
         print("Precision:", precisions[best_idx])
         print("Recall:", recalls[best_idx])
         print("F1 score:", f1_scores[best_idx])
+        print("Best PR threshold:", best_pr_threshold)
+        print("\n")
 
 
         # find best prob threshold based on Youden's J statistic for fpr and tpr in roc curve 
@@ -135,13 +136,14 @@ class Model_v1(Model):
         youden_j = tpr - fpr
         best_idx = np.argmax(youden_j)
         best_roc_threshold = roc_thresholds[best_idx]
-        print("Best ROC threshold:", best_roc_threshold)
         print("FPR:", fpr[best_idx])
         print("TPR:", tpr[best_idx])
+        print("Best ROC threshold:", best_roc_threshold)
+        print("\n")
 
         #best_threshold = (best_pr_threshold + best_roc_threshold) / 2
         best_threshold = best_pr_threshold
-        print("\nBest threshold:", best_threshold)
+        print("Best threshold:", best_threshold)
 
         # adjust model threshold to improve performance
         self.set_threshold(best_threshold)

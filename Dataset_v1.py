@@ -59,15 +59,17 @@ class Dataset_v1(Dataset):
         x_val = val_data[self.features_for_training]
         x_test = test_data[self.features_for_training]
 
+        print("\nDataset Shapes")
         print(x_trn.shape,y_trn.shape)
         print(x_val.shape,y_val.shape)
         print(x_test.shape, y_test.shape)
+        print("\n")
              
         return x_trn,y_trn,x_val,y_val,x_test,y_test
 
     def set_features_for_training(self,selected_features:List[str]) -> None:
         self.features_for_training:List[str] = selected_features
-        print("Features for training set:\n",self.features_for_training)
+        print("\nFeatures for training set:\n",self.features_for_training)
 
     def create_top_team(self) -> None:
         self.data['TopTeam_Red Bull Racing'] = (self.data['TeamName'] == 'Red Bull Racing').astype(int)
@@ -178,6 +180,10 @@ class Dataset_v1(Dataset):
     
     def create_n_past(self) -> None:
         self.data['n_past']  = self.data.groupby('BroadcastName').cumcount()
+    
+    def create_last_race_position(self) -> None:
+        self.data['last_race_position'] = self.data.groupby('BroadcastName')['Race_Position'].shift(1)
+        self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
 
     def check_feature(self,feature) -> None:
         if not self.verbose: return
@@ -334,6 +340,7 @@ class Dataset_v1(Dataset):
         self.create_n_past_podiums_last_5()
         self.create_lap_time()
         self.create_n_past()
+        #self.create_last_race_position() # retire this feature. Just adds noise due to high correlation with driver encoding.
         self.create_lagged_features() # this creates NaN for the 1st and 2nd race 
 
         self.data = self.data.dropna() # you lose the first 2 of each driver because of this

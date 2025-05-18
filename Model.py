@@ -8,9 +8,10 @@ from datetime import datetime
 from sklearn.metrics import accuracy_score, mean_absolute_error, confusion_matrix, ConfusionMatrixDisplay, r2_score, roc_auc_score, f1_score, precision_score, recall_score, roc_curve, precision_recall_curve, average_precision_score,fbeta_score
 
 class Model:
-    def __init__(self, dataset:Dataset):
+    def __init__(self, dataset:Dataset, name:str):
         self.dataset = dataset
         self.x_trn,self.y_trn,self.x_val,self.y_val,self.x_test,self.y_test = dataset.train_val_test_split()
+        self.name = name
 
     @abstractmethod
     def tune_hyperparameters(self):
@@ -29,6 +30,9 @@ class Model:
     
     def set_model_params(self,params:Dict[str,Any]) -> None:
         self.model_params = params
+
+    def get_model_name(self) -> str:
+        return self.name
 
     def write_results(self,data_type:str, results:Dict[str,float], filename:str = "model_results.csv") -> None:
         valid_data_types = ["train","val","test"]
@@ -49,6 +53,7 @@ class Model:
             'dataset_name': dataset_name,
             'data_type': data_type,
             'features': list(self.x_trn.columns),  # Add features list
+            'model_name': self.get_model_name(),
             **model_params,  # Unpack model parameters
             **results  # Unpack original results
         }
@@ -65,6 +70,7 @@ class Model:
                     'dataset_name', 
                     'data_type',
                     'features',  # Add features column
+                    'model_name',
                     *model_params.keys(),  # Unpack model parameter keys
                     *results.keys()  # Unpack result keys
                 ]
@@ -100,6 +106,7 @@ class Model:
         f1 = f1_score(y_truth,y_pred)
         f05 = fbeta_score(y_truth,y_pred, beta=0.5, average="binary")
         
+        print("\n")
         print(f"Accuracy (exact position match): {accuracy:.3f}")
         print(f"R^2: {r2:.3f}")
         print("ROC AUC:", auroc if auroc is not None else "N/A")
