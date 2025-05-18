@@ -1,6 +1,7 @@
 import pandas as pd
 from Dataset import Dataset
 from typing import List
+import numpy as np
 
 class Dataset_v1(Dataset):
 
@@ -220,6 +221,104 @@ class Dataset_v1(Dataset):
         # Sort back to chronological order
         self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
 
+    def create_pos_gained_encoding(self) -> None:
+        self.data = self.data.sort_values(['BroadcastName', 'Race_Date_Code'])
+
+        qual_position = self.data['Qual_Position']
+        race_position = self.data['Race_Position']
+
+        # Handle -1 in race_position (assume DNF or did not start)
+        race_position = race_position.where(race_position != -1, 21)
+
+        pos_gained = qual_position - race_position
+
+        # Finishing weight calculation
+        finishing_weight = (1 / np.log(race_position + 1)) * ((21 - race_position) / 20)
+
+        # Precompute log term safely
+        safe_log_term = -np.log(finishing_weight.clip(lower=1e-6))
+
+        # Vectorized final score calculation
+        adjusted_pos_gained = (
+            (pos_gained == 0) * finishing_weight + 
+            (pos_gained > 0) * (pos_gained * finishing_weight) + 
+            (pos_gained < 0) * (pos_gained * safe_log_term * 0.05)
+        )
+
+        # Add podium bonus
+        adjusted_pos_gained += (race_position <= 3) * 1  # podium_bonus = 1
+
+        # Store final scores directly
+        self.data['final_score'] = adjusted_pos_gained
+
+        # Exponential Weighted Average Encoding
+        self.data['n_past_final'] = self.data.groupby('BroadcastName').cumcount()
+        global_mean_final = self.data['final_score'].mean()
+        k = 20
+        alpha = 0.3
+
+        self.data['ema_final'] = (
+            self.data
+            .groupby('BroadcastName', group_keys=False)['final_score']
+            .apply(lambda x: x.shift(1).ewm(alpha=alpha, adjust=True).mean())
+        )
+
+        self.data['pos_gained_encoding'] = (
+            (self.data['n_past_final'] * self.data['ema_final'] + k * global_mean_final) /
+            (self.data['n_past_final'] + k)
+        )
+
+        # Validate feature
+        self.check_feature("pos_gained_encoding")
+
+        # Clean up
+        self.data.drop(columns=["ema_final", "n_past_final", "final_score"], inplace=True)
+        self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
+
+    def create_pos_gained_encoding_simple(self) -> None:
+        self.data = self.data.sort_values(['BroadcastName', 'Race_Date_Code'])
+
+        qual_position = self.data['Qual_Position']
+        race_position = self.data['Race_Position']
+
+        # Handle -1 in race_position (assume DNF or did not start)
+        race_position = race_position.where(race_position != -1, 21)
+
+        pos_gained = qual_position - race_position
+
+        # Finishing weight calculation
+        finishing_weight = (1 / np.log(race_position + 1)) * ((21 - race_position) / 20)
+
+        # Precompute log term safely
+        safe_log_term = -np.log(finishing_weight.clip(lower=1e-6))
+
+        # Vectorized final score calculation
+        adjusted_pos_gained = (
+            (pos_gained == 0) * finishing_weight + 
+            (pos_gained > 0) * (pos_gained * finishing_weight) + 
+            (pos_gained < 0) * (pos_gained * safe_log_term * 0.05)
+        )
+
+        # Add podium bonus
+        adjusted_pos_gained += (race_position <= 3) * 1  # podium_bonus = 1
+
+        # Store final scores directly
+        self.data['final_score'] = adjusted_pos_gained
+
+        # Create pos_gained_encoding based only on the last race result
+        self.data['pos_gained_encoding_simple'] = (
+            self.data
+            .groupby('BroadcastName', group_keys=False)['final_score']
+            .shift(1)  # Previous race's final_score
+        )
+
+        # Validate feature
+        self.check_feature("pos_gained_encoding_simple")
+
+        # Clean up
+        self.data.drop(columns=["final_score"], inplace=True)
+        self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
+
     def build_features_into_dataset(self) -> None:
         self.create_target()
 
@@ -227,6 +326,8 @@ class Dataset_v1(Dataset):
         self.create_circuit_type()
         self.create_race_date_code()
         self.create_driver_encoding()
+        self.create_pos_gained_encoding()
+        self.create_pos_gained_encoding_simple()
         self.create_ewa_driver_results() #this creates NaN for the 1st race
         #self.create_relative_driver_race_features()
         self.create_n_past_podiums()
