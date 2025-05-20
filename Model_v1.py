@@ -12,8 +12,8 @@ from sklearn.metrics import accuracy_score, mean_absolute_error, confusion_matri
 from sklearn.ensemble import RandomForestClassifier
 
 class Model_v1(Model):
-    def __init__(self,dataset: Dataset, name:str="RF"):
-        super().__init__(dataset,name)
+    def __init__(self,dataset: Dataset, name:str, is_for_pred:bool, threshold=0.5):
+        super().__init__(dataset,name,is_for_pred)
         self.set_model_params(
             {
                 "n_estimators": 120,
@@ -29,7 +29,7 @@ class Model_v1(Model):
                 #"bootstrap": True
             }
         )
-        self.threshold = 0.5
+        self.threshold = threshold
     
     def tune_hyperparameters(self):
         raise NotImplementedError

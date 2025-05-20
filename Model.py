@@ -8,9 +8,9 @@ from datetime import datetime
 from sklearn.metrics import accuracy_score, mean_absolute_error, confusion_matrix, ConfusionMatrixDisplay, r2_score, roc_auc_score, f1_score, precision_score, recall_score, roc_curve, precision_recall_curve, average_precision_score,fbeta_score
 
 class Model:
-    def __init__(self, dataset:Dataset, name:str):
+    def __init__(self, dataset:Dataset, name:str, is_for_pred:bool):
         self.dataset = dataset
-        self.x_trn,self.y_trn,self.x_val,self.y_val,self.x_test,self.y_test = dataset.train_val_test_split()
+        self.x_trn,self.y_trn,self.x_val,self.y_val,self.x_test,self.y_test = dataset.train_val_test_split(is_for_pred)
         self.name = name
 
     @abstractmethod

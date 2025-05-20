@@ -16,7 +16,7 @@ class Dataset:
         raise NotImplementedError
 
     @abstractmethod
-    def train_val_test_split(self):
+    def train_val_test_split(self,is_for_pred):
         raise NotImplementedError
 
     @abstractmethod

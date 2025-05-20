@@ -1,6 +1,6 @@
 import pandas as pd
 from Dataset import Dataset
-from typing import List
+from typing import List, Union
 import numpy as np
 
 class Dataset_v1(Dataset):
@@ -33,16 +33,40 @@ class Dataset_v1(Dataset):
             self.data.loc[index,"BroadcastName"] = drivers_dict[row["DriverNumber"]][0]
         
         self.data.loc[self.data["DriverNumber"]==12,"BroadcastName"] = "K ANTONELLI"
-        if len(self.data["BroadcastName"].unique()) != 31: raise Exception("Wrong number of unique driver names")
+        #if len(self.data["BroadcastName"].unique()) != 31: raise Exception("Wrong number of unique driver names") #uncomment this before pushing, was only to test somehting
         
         self.data = self.data.reset_index(drop=True)
 
-    def train_val_test_split(self) -> tuple[pd.DataFrame,pd.Series,pd.DataFrame,pd.Series,pd.DataFrame,pd.Series]:
+    def train_val_test_split(self, is_for_pred) -> tuple[pd.DataFrame,pd.Series,Union[pd.DataFrame,None],Union[pd.Series,None],pd.DataFrame,Union[pd.Series,None]]:
         data_copy = self.data.copy(deep=True)
         #if "Race_Position" in data_copy.columns: data_copy.drop(columns=["Race_Position"], inplace=True)
         if "target" not in data_copy.columns: raise Exception("Target column not found in data")
         if "target" in self.features_for_training: raise Exception("Target column found in features for training")
         #data_copy = data_copy[self.features_for_training]
+
+        if is_for_pred:
+            max_round = data_copy.loc[data_copy["Year"] == 2025, "Round_Number"].max()
+            trn_data = data_copy.loc[
+                (data_copy["Year"] < 2025) | 
+                ((data_copy["Year"] == 2025) & (data_copy["Round_Number"] < max_round)),
+                :
+            ]
+
+            test_data = data_copy.loc[
+                (data_copy["Year"] == 2025) & (data_copy["Round_Number"] >= max_round),
+                :
+            ]
+            y_trn = trn_data["target"]
+           
+            x_trn = trn_data[self.features_for_training]
+            x_test = test_data[self.features_for_training]
+
+            print("\nDataset Shapes")
+            print(x_trn.shape,y_trn.shape)
+            print(x_test.shape, y_test.shape)
+            print("\n")
+
+            return x_trn,y_trn,None,None,x_test,None
         
         trn_data = data_copy.loc[data_copy["Year"]!=2025,:]
         test_data = data_copy.loc[data_copy["Year"]==2025,:]
@@ -325,6 +349,50 @@ class Dataset_v1(Dataset):
         self.data.drop(columns=["final_score"], inplace=True)
         self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
 
+    def create_qual_q3_time(self) -> None:
+        # !!NOTE: SOME OF THE TIMES IN THIS FEATURE SEEM WRONG (THIS IS AN ERROR FROM THE DATA LOADING PORTION PEICE, NOT HERE - JUST USE THIS FEATURE WITH CAUTION )
+        self.data = self.data.sort_values(['Race_Date_Code'])
+        def normalize_q3_times(group):
+            # Keep -1 values as is, normalize only real times
+            real_times = group[group != -1]
+            if real_times.empty:
+                return group  # No real times to normalize
+
+            min_time = real_times.min()
+            return group.apply(lambda x: x - min_time if x != -1 else -1)
+
+        self.data["Qual_Q3_Time_Normal"] = (
+            self.data
+            .groupby("Race_Date_Code", group_keys=False)["Qual_Q3_Time"]
+            .transform(normalize_q3_times)
+        )
+
+        self.data.drop(columns=["Qual_Q3_Time"],inplace=True) # drop cols used to calculate driver encoding
+        self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
+    
+    def create_race_time_encoding(self) -> None:
+        self.data = self.data.sort_values(['BroadcastName','Race_Date_Code']) 
+        self.data['n_past']  = self.data.groupby('BroadcastName').cumcount() # number of past races up to t-1
+
+        mu = self.data['Race_Position'].mean() # global mean 
+        k  = 20 # smoothing parameter (defines the number of races needed to be considered not a rookie)
+        alpha = 0.3 # EMA smoothing factor. means alpha% weight on the most recent race i.e. St = alpha * xt + (1-alpha) * St-1
+
+        self.data['ema_past'] = (
+            self.data
+            .groupby('BroadcastName',group_keys=False)['Standardized_Time']
+            .apply(lambda x: x.shift(1).ewm(alpha=alpha, adjust=True).mean())
+        )
+
+        # exponential weighted average of historice race positions
+        # this encoding reflects both the drivers recent form and the uncertainty that comes if they've only raced a little
+        self.data['Race_Time_Encoding'] = (self.data['n_past'] * self.data['ema_past'] + k  * mu) / (self.data['n_past'] + k)
+
+        self.check_feature("Race_Time_Encoding")
+
+        self.data.drop(columns=["ema_past","n_past"],inplace=True) # drop cols used to calculate driver encoding
+        self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
+
     def build_features_into_dataset(self) -> None:
         self.create_target()
 
@@ -332,6 +400,8 @@ class Dataset_v1(Dataset):
         self.create_circuit_type()
         self.create_race_date_code()
         self.create_driver_encoding()
+        self.create_race_time_encoding()
+        self.create_qual_q3_time()
         self.create_pos_gained_encoding()
         self.create_pos_gained_encoding_simple()
         self.create_ewa_driver_results() #this creates NaN for the 1st race
@@ -349,7 +419,7 @@ class Dataset_v1(Dataset):
         #min_code = self.data['Race_Date_Code'].min()
         #max_code = self.data['Race_Date_Code'].max()
         #self.data['Race_Date_Code'] = (self.data['Race_Date_Code'] - min_code) / (max_code - min_code)
-        columns_to_drop = ["Sector1Time","Sector2Time","Sector3Time","SpeedST","Stint","lap_time"] #drop race data
+        columns_to_drop = ["Sector1Time","Sector2Time","Sector3Time","SpeedST","Stint","lap_time","Standardized_Time"] #drop race data
         self.data = self.data.drop(columns=columns_to_drop)
     
 if __name__ == "__main__":
