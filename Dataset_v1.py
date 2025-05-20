@@ -14,7 +14,7 @@ class Dataset_v1(Dataset):
         self.data["Event_Type"] = (self.data["Event_Type"] == "Race").astype(int)
         
         # clean Race NaNs
-        cols_to_fill = ["Sprint_Qual_Position", "Sprint_Race_Position","Sector1Time", "Sector2Time", "Sector3Time", "SpeedST", "Stint", "Race_Position"]
+        cols_to_fill = ["Sprint_Qual_Position", "Sprint_Race_Position","Sector1Time", "Sector2Time", "Sector3Time", "SpeedST", "Stint", "Standardized_Time" ,"Race_Position"]
         for col in self.data.columns:
             if col in cols_to_fill:
                 self.data[col] = self.data[col].fillna(-1)
@@ -63,14 +63,14 @@ class Dataset_v1(Dataset):
 
             print("\nDataset Shapes")
             print(x_trn.shape,y_trn.shape)
-            print(x_test.shape, y_test.shape)
+            print(x_test.shape)
             print("\n")
 
             return x_trn,y_trn,None,None,x_test,None
         
         trn_data = data_copy.loc[data_copy["Year"]!=2025,:]
         test_data = data_copy.loc[data_copy["Year"]==2025,:]
-
+        
         val_mask = (data_copy["Year"] == 2024) & (data_copy["Round_Number"] > 12)
         val_data = data_copy[val_mask]
         trn_data = data_copy[~val_mask]

@@ -5,33 +5,56 @@ import Model
 import Dataset 
 import pandas as pd
 
+""" WORK IN PROGRESS """
+
 class ModelEval():
-    def __init__(self,model:Model,dataset:Dataset):
-        y_trn = model.y_trn
-        y_val = model.y_val # might be None
-        y_test = model.y_test # might be None
-        if y_val is None:
-            y_val = pd.DataFrame()
-        if y_test is None:
-            y_test = pd.DataFrame()
-
-        y = pd.concat([y_trn,y_val],axis=0, ignore_index=True)
-        y = pd.concat([y,y_test],axis=0, ignore_index=True)
-        pretty_df = pd.DataFrame()
-        data = dataset.get_data()
+    def __init__(self, model: Model, dataset: Dataset):
+        """
+        Initialize ModelEval with model and dataset.
         
-        pretty_df["Round_Number"] = data["Round_Number"]
-        pretty_df["Driver"] = data["BroadcastName"]
-        pretty_df["Location"] = data["Location"] 
+        Args:
+            model: Trained model instance
+            dataset: Dataset instance
+        """
+        if model.x_val is None or model.y_val is None:
+            raise Exception("Model has no validation data - This class is only meant for exploration during training")
+
+        # Get predictions for both training and validation data
+        pred_trn, prob_trn = model.predict(model.x_trn)
+        pred_val, prob_val = model.predict(model.x_val)
+
+        # Get the original data indices for training and validation
+        trn_indices = model.x_trn.index
+        val_indices = model.x_val.index
+
+        # Get the original data
+        original_data = dataset.get_data()
         
+        # Create dataframes for each split with their respective indices
+        trn_df = pd.DataFrame({
+            "Round_Number": original_data.loc[trn_indices, "Round_Number"],
+            "Year": original_data.loc[trn_indices, "Year"],
+            "Location": original_data.loc[trn_indices, "Location"],
+            "Driver": original_data.loc[trn_indices, "BroadcastName"],
+            "Actual": model.y_trn,
+            "Predicted": pred_trn,
+            "Probability": prob_trn
+        })
 
-    def __init__(self,model,x,round_number,driver,country,actual):
-        self.model = model
-        self.x = x
-        self.round_number = round_number
-        self.driver = driver
-        self.country = country
-        self.pred,self.prob= model.predict(x)
-        self.actual = actual
+        val_df = pd.DataFrame({
+            "Round_Number": original_data.loc[val_indices, "Round_Number"],
+            "Year": original_data.loc[val_indices, "Year"],
+            "Location": original_data.loc[val_indices, "Location"],
+            "Driver": original_data.loc[val_indices, "BroadcastName"],
+            "Actual": model.y_val,
+            "Predicted": pred_val,
+            "Probability": prob_val
+        })
 
-        self.pretty_df = self.pretty_predictions()
+        # Concatenate with proper indices
+        self.pretty_df = pd.concat([trn_df, val_df], axis=0)
+        self.pretty_df = self.pretty_df.sort_values(['Year','Round_Number','Probability'],ascending=[True,True,False])
+
+    
+    def get_df(self) -> pd.DataFrame:
+        return self.pretty_df.copy()

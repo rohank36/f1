@@ -30,6 +30,7 @@ class Model_v1(Model):
             }
         )
         self.threshold = threshold
+        self.is_for_pred = is_for_pred
     
     def tune_hyperparameters(self):
         raise NotImplementedError
@@ -102,8 +103,12 @@ class Model_v1(Model):
     def find_best_threshold(self,plot_curves=False):
         # find best prob threshold based on precision and recall curve
         print(f"Finding best threshold...")
-        probs = self.model.predict_proba(self.x_val)[:,1]
-        precisions,recalls,pr_thresholds = precision_recall_curve(self.y_val,probs)
+        if self.is_for_pred:
+            probs = self.model.predict_proba(self.x_trn)[:,1]
+            precisions,recalls,pr_thresholds = precision_recall_curve(self.y_trn,probs)
+        else:
+            probs = self.model.predict_proba(self.x_val)[:,1]
+            precisions,recalls,pr_thresholds = precision_recall_curve(self.y_val,probs)
         if plot_curves:
             plt.plot(recalls,precisions)
             plt.xlabel("Recall")
@@ -127,7 +132,8 @@ class Model_v1(Model):
 
 
         # find best prob threshold based on Youden's J statistic for fpr and tpr in roc curve 
-        fpr,tpr,roc_thresholds = roc_curve(self.y_val,probs)
+        if self.is_for_pred: fpr,tpr,roc_thresholds = roc_curve(self.y_trn,probs)
+        else: fpr,tpr,roc_thresholds = roc_curve(self.y_val,probs)
         if plot_curves:
             plt.plot(fpr,tpr)
             plt.xlabel("False Positive Rate")
