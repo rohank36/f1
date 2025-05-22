@@ -126,6 +126,3 @@ class ModelEval():
         f1_per_rd['Location'] = f1_per_rd['Round_Number'].map(round_to_country)
 
         return f1_per_rd.sort_values(by='f1',ascending=False)
-        
-        return f1_per_rd
-    

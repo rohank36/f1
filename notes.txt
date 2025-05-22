@@ -85,6 +85,8 @@ TOTAL RACE TIME (how long it took them to finish the race) relative to the race 
 
 
 ### To Dos
+Try different models, including the Balanced Random Forest Classifier from the imbalanced learn library. 
+
 Refactor and clean code to make it easy to analyze/experiment/test with different features (refer to iphone notes)
 
 Need to increase recall a lot while maintaing precision

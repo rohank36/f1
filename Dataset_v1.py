@@ -370,27 +370,145 @@ class Dataset_v1(Dataset):
         self.data.drop(columns=["Qual_Q3_Time"],inplace=True) # drop cols used to calculate driver encoding
         self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
     
-    def create_race_time_encoding(self) -> None:
+    def create_race_time_encoding_v1(self) -> None:
+        """
+        Note: a lot of race_times for this feature from the api were wrong, but the top 5 driver times were all correct that is why you're masking it and only using the top 5.
+        """
+        def mask_group(group):
+            # Sort by Race_Position ascending
+            group = group.sort_values("Race_Position", ascending=True).copy()
+            
+            # Create a mask: keep top 10, NaN the rest
+            group["Standardized_Time"] = group["Standardized_Time"].where(group["Race_Position"] <= 5, np.nan)
+        
+            return group
+
+        def check_standardized_time_ordering(df):
+            def is_time_ascending(group):
+                # Sort by Race_Position
+                group_sorted = group.sort_values("Race_Position", ascending=True)
+                # Check if Standardized_Time is non-decreasing
+                valid_times = group_sorted["Standardized_Time"].dropna()
+                return valid_times.is_monotonic_increasing
+
+            # Apply the check to each (Year, Round_Number) group
+            result = (
+                df.groupby(["Year", "Round_Number"])
+                .apply(is_time_ascending)
+                .reset_index(name="is_time_ordered")
+            )
+
+            return result
+
+        # Apply to each (Year, Round_Number) group
+        self.data = self.data.groupby(["Year", "Round_Number"], group_keys=False).apply(mask_group)
+
+        res = check_standardized_time_ordering(self.data)
+        if len(res.loc[res["is_time_ordered"]==False]) > 0: 
+            print(res.loc[res["is_time_ordered"]==False])
+            raise Exception("Standardized_Time is not ordered for some races")
+        
         self.data = self.data.sort_values(['BroadcastName','Race_Date_Code']) 
-        self.data['n_past']  = self.data.groupby('BroadcastName').cumcount() # number of past races up to t-1
 
-        mu = self.data['Race_Position'].mean() # global mean 
-        k  = 20 # smoothing parameter (defines the number of races needed to be considered not a rookie)
-        alpha = 0.3 # EMA smoothing factor. means alpha% weight on the most recent race i.e. St = alpha * xt + (1-alpha) * St-1
-
-        self.data['ema_past'] = (
+        self.data['Race_Time_Encoding'] = (
             self.data
-            .groupby('BroadcastName',group_keys=False)['Standardized_Time']
-            .apply(lambda x: x.shift(1).ewm(alpha=alpha, adjust=True).mean())
+            .groupby('BroadcastName', group_keys=False)['Standardized_Time']
+            .shift(1)  # Previous race's final_score
+        )
+       
+        self.data["Race_Time_Encoding"].replace(np.nan, 1000, inplace=True)
+        self.data["Race_Time_Encoding"].replace(-1, 1000, inplace=True)
+        self.check_feature("Race_Time_Encoding")
+        self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
+
+    def create_race_time_encoding(self) -> None:
+        """
+        Note: a lot of race_times for this feature from the api were wrong, but the top 5 driver times were all correct that is why you're masking it and only using the top 5.
+        """
+        def mask_group(group):
+            # Sort by Race_Position ascending
+            group = group.sort_values("Race_Position", ascending=True).copy()
+            
+            # Create a mask: keep top 10, NaN the rest
+            group["Standardized_Time"] = group["Standardized_Time"].where(group["Race_Position"] <= 3, np.nan)
+        
+            return group
+
+        def check_standardized_time_ordering(df):
+            def is_time_ascending(group):
+                # Sort by Race_Position
+                group_sorted = group.sort_values("Race_Position", ascending=True)
+                # Check if Standardized_Time is non-decreasing
+                valid_times = group_sorted["Standardized_Time"].dropna()
+                return valid_times.is_monotonic_increasing
+
+            # Apply the check to each (Year, Round_Number) group
+            result = (
+                df.groupby(["Year", "Round_Number"])
+                .apply(is_time_ascending)
+                .reset_index(name="is_time_ordered")
+            )
+
+            return result
+
+        # Apply to each (Year, Round_Number) group
+        self.data["Standardized_Time"].replace(-1, np.nan, inplace=True) #dealing with edge cases
+        self.data = self.data.groupby(["Year", "Round_Number"], group_keys=False).apply(mask_group)
+
+        res = check_standardized_time_ordering(self.data)
+        if len(res.loc[res["is_time_ordered"]==False]) > 0: 
+            print(res.loc[res["is_time_ordered"]==False])
+            raise Exception("Standardized_Time is not ordered for some races")
+        
+        self.data = self.data.sort_values(['BroadcastName','Race_Date_Code']) 
+
+        def normalize_standardized_time(group):
+            times = group['Standardized_Time']
+            return (times - times.min()) / (times.max() - times.min() + 1e-6)
+
+        self.data['Standardized_Time_Normalized'] = (
+            self.data
+            .groupby(['Year', 'Round_Number'], group_keys=False)
+            .apply(lambda g: normalize_standardized_time(g))
+            .fillna(1.0)
         )
 
-        # exponential weighted average of historice race positions
-        # this encoding reflects both the drivers recent form and the uncertainty that comes if they've only raced a little
-        self.data['Race_Time_Encoding'] = (self.data['n_past'] * self.data['ema_past'] + k  * mu) / (self.data['n_past'] + k)
-
+        self.data['Race_Time_Encoding'] = (
+            self.data
+            .groupby('BroadcastName', group_keys=False)['Standardized_Time_Normalized']
+            #.shift(1)  # Previous race's final_score
+            .apply(lambda x: x.shift(1).ewm(alpha=0.4, adjust=True).mean())
+            #.fillna(1.0)
+        )
+       
+        #self.data["Race_Time_Encoding"].replace(np.nan, 1000, inplace=True)
+        #self.data["Race_Time_Encoding"].replace(-1, 1000, inplace=True)
+        self.data.drop(columns=["Standardized_Time_Normalized"], inplace=True)
         self.check_feature("Race_Time_Encoding")
+        self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
 
-        self.data.drop(columns=["ema_past","n_past"],inplace=True) # drop cols used to calculate driver encoding
+    def create_n_past_race_wins(self) -> None:
+        """Create a feature that counts the number of past race wins for each driver"""
+        # Sort by driver and race date
+        self.data = self.data.sort_values(['BroadcastName','Race_Date_Code'])
+        
+        # Create a binary win indicator (1 if Race_Position == 1, 0 otherwise)
+        self.data['race_win'] = (self.data['Race_Position'] == 1).astype(int)
+        
+        # Calculate cumulative sum of wins, shifted by 1 to exclude current race
+        self.data['n_past_race_wins'] = (
+            self.data
+            .groupby('BroadcastName')['race_win']
+            .transform(lambda x: x.shift(1).rolling(window=5, min_periods=1).sum())
+            .fillna(0)
+        )
+        
+        # Drop the temporary race_win column
+        self.data = self.data.drop('race_win', axis=1)
+        
+        self.check_feature("n_past_race_wins")
+
+        # Sort back to chronological order
         self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
 
     def build_features_into_dataset(self) -> None:
@@ -408,10 +526,14 @@ class Dataset_v1(Dataset):
         #self.create_relative_driver_race_features()
         self.create_n_past_podiums()
         self.create_n_past_podiums_last_5()
+        self.create_n_past_race_wins()
         self.create_lap_time()
         self.create_n_past()
         #self.create_last_race_position() # retire this feature. Just adds noise due to high correlation with driver encoding.
         self.create_lagged_features() # this creates NaN for the 1st and 2nd race 
+
+        columns_to_drop = ["Sector1Time","Sector2Time","Sector3Time","SpeedST","Stint","lap_time","Standardized_Time"] #drop race data
+        self.data = self.data.drop(columns=columns_to_drop)
 
         self.data = self.data.dropna() # you lose the first 2 of each driver because of this
         self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
@@ -419,8 +541,7 @@ class Dataset_v1(Dataset):
         #min_code = self.data['Race_Date_Code'].min()
         #max_code = self.data['Race_Date_Code'].max()
         #self.data['Race_Date_Code'] = (self.data['Race_Date_Code'] - min_code) / (max_code - min_code)
-        columns_to_drop = ["Sector1Time","Sector2Time","Sector3Time","SpeedST","Stint","lap_time","Standardized_Time"] #drop race data
-        self.data = self.data.drop(columns=columns_to_drop)
+        
     
 if __name__ == "__main__":
     dataset = Dataset_v1("data/train_data.csv","data/test_data.csv")
