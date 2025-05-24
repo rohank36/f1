@@ -85,14 +85,14 @@ TOTAL RACE TIME (how long it took them to finish the race) relative to the race 
 
 
 ### To Dos
+Try different models, including the Balanced Random Forest Classifier from the imbalanced learn library. 
+
 Refactor and clean code to make it easy to analyze/experiment/test with different features (refer to iphone notes)
 
 Need to increase recall a lot while maintaing precision
     - engineer better features (follow a system like sequential feature selection etc)
-        - play around with more features so see if you can squeeze some performance
-        - maybe look at 1st round of qualifying time b/c they're theoretically racing in clean air. WIll give more fine grained prediction power compared to raw qual position maybe?
-        - try driver vs teammate metric e.g. diff in finishing position --> this captures drivers skill when the car is the same (but might not be a good metric to capture because if someone qualifies p10 and their teammate is p20, then they're much better then teamate but still bad overall.
-        - weighted average pit stop time?
+    - try average of fastest laps across Free practices as feature
+    - try driver vs teammate metric e.g. diff in finishing position --> this captures drivers skill when the car is the same (but might not be a good metric to capture because if someone qualifies p10 and their teammate is p20, then they're much better then teamate but still bad overall.
     - boosting (using another model e.g. regression model to correct systematic errors)
     - Try different models that better handle class imbalance 
 

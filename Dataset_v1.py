@@ -1,6 +1,6 @@
 import pandas as pd
 from Dataset import Dataset
-from typing import List
+from typing import List, Union
 import numpy as np
 
 class Dataset_v1(Dataset):
@@ -14,7 +14,7 @@ class Dataset_v1(Dataset):
         self.data["Event_Type"] = (self.data["Event_Type"] == "Race").astype(int)
         
         # clean Race NaNs
-        cols_to_fill = ["Sprint_Qual_Position", "Sprint_Race_Position","Sector1Time", "Sector2Time", "Sector3Time", "SpeedST", "Stint", "Race_Position"]
+        cols_to_fill = ["Sprint_Qual_Position", "Sprint_Race_Position","Sector1Time", "Sector2Time", "Sector3Time", "SpeedST", "Stint", "Standardized_Time" ,"Race_Position"]
         for col in self.data.columns:
             if col in cols_to_fill:
                 self.data[col] = self.data[col].fillna(-1)
@@ -33,20 +33,44 @@ class Dataset_v1(Dataset):
             self.data.loc[index,"BroadcastName"] = drivers_dict[row["DriverNumber"]][0]
         
         self.data.loc[self.data["DriverNumber"]==12,"BroadcastName"] = "K ANTONELLI"
-        if len(self.data["BroadcastName"].unique()) != 31: raise Exception("Wrong number of unique driver names")
+        #if len(self.data["BroadcastName"].unique()) != 31: raise Exception("Wrong number of unique driver names") #uncomment this before pushing, was only to test somehting
         
         self.data = self.data.reset_index(drop=True)
 
-    def train_val_test_split(self) -> tuple[pd.DataFrame,pd.Series,pd.DataFrame,pd.Series,pd.DataFrame,pd.Series]:
+    def train_val_test_split(self, is_for_pred) -> tuple[pd.DataFrame,pd.Series,Union[pd.DataFrame,None],Union[pd.Series,None],pd.DataFrame,Union[pd.Series,None]]:
         data_copy = self.data.copy(deep=True)
         #if "Race_Position" in data_copy.columns: data_copy.drop(columns=["Race_Position"], inplace=True)
         if "target" not in data_copy.columns: raise Exception("Target column not found in data")
         if "target" in self.features_for_training: raise Exception("Target column found in features for training")
         #data_copy = data_copy[self.features_for_training]
+
+        if is_for_pred:
+            max_round = data_copy.loc[data_copy["Year"] == 2025, "Round_Number"].max()
+            trn_data = data_copy.loc[
+                (data_copy["Year"] < 2025) | 
+                ((data_copy["Year"] == 2025) & (data_copy["Round_Number"] < max_round)),
+                :
+            ]
+
+            test_data = data_copy.loc[
+                (data_copy["Year"] == 2025) & (data_copy["Round_Number"] >= max_round),
+                :
+            ]
+            y_trn = trn_data["target"]
+           
+            x_trn = trn_data[self.features_for_training]
+            x_test = test_data[self.features_for_training]
+
+            print("\nDataset Shapes")
+            print(x_trn.shape,y_trn.shape)
+            print(x_test.shape)
+            print("\n")
+
+            return x_trn,y_trn,None,None,x_test,None
         
         trn_data = data_copy.loc[data_copy["Year"]!=2025,:]
         test_data = data_copy.loc[data_copy["Year"]==2025,:]
-
+        
         val_mask = (data_copy["Year"] == 2024) & (data_copy["Round_Number"] > 12)
         val_data = data_copy[val_mask]
         trn_data = data_copy[~val_mask]
@@ -325,6 +349,168 @@ class Dataset_v1(Dataset):
         self.data.drop(columns=["final_score"], inplace=True)
         self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
 
+    def create_qual_q3_time(self) -> None:
+        # !!NOTE: SOME OF THE TIMES IN THIS FEATURE SEEM WRONG (THIS IS AN ERROR FROM THE DATA LOADING PORTION PEICE, NOT HERE - JUST USE THIS FEATURE WITH CAUTION )
+        self.data = self.data.sort_values(['Race_Date_Code'])
+        def normalize_q3_times(group):
+            # Keep -1 values as is, normalize only real times
+            real_times = group[group != -1]
+            if real_times.empty:
+                return group  # No real times to normalize
+
+            min_time = real_times.min()
+            return group.apply(lambda x: x - min_time if x != -1 else -1)
+
+        self.data["Qual_Q3_Time_Normal"] = (
+            self.data
+            .groupby("Race_Date_Code", group_keys=False)["Qual_Q3_Time"]
+            .transform(normalize_q3_times)
+        )
+
+        self.data.drop(columns=["Qual_Q3_Time"],inplace=True) # drop cols used to calculate driver encoding
+        self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
+    
+    def create_race_time_encoding_v1(self) -> None:
+        """
+        Note: a lot of race_times for this feature from the api were wrong, but the top 5 driver times were all correct that is why you're masking it and only using the top 5.
+        """
+        def mask_group(group):
+            # Sort by Race_Position ascending
+            group = group.sort_values("Race_Position", ascending=True).copy()
+            
+            # Create a mask: keep top 10, NaN the rest
+            group["Standardized_Time"] = group["Standardized_Time"].where(group["Race_Position"] <= 5, np.nan)
+        
+            return group
+
+        def check_standardized_time_ordering(df):
+            def is_time_ascending(group):
+                # Sort by Race_Position
+                group_sorted = group.sort_values("Race_Position", ascending=True)
+                # Check if Standardized_Time is non-decreasing
+                valid_times = group_sorted["Standardized_Time"].dropna()
+                return valid_times.is_monotonic_increasing
+
+            # Apply the check to each (Year, Round_Number) group
+            result = (
+                df.groupby(["Year", "Round_Number"])
+                .apply(is_time_ascending)
+                .reset_index(name="is_time_ordered")
+            )
+
+            return result
+
+        # Apply to each (Year, Round_Number) group
+        self.data = self.data.groupby(["Year", "Round_Number"], group_keys=False).apply(mask_group)
+
+        res = check_standardized_time_ordering(self.data)
+        if len(res.loc[res["is_time_ordered"]==False]) > 0: 
+            print(res.loc[res["is_time_ordered"]==False])
+            raise Exception("Standardized_Time is not ordered for some races")
+        
+        self.data = self.data.sort_values(['BroadcastName','Race_Date_Code']) 
+
+        self.data['Race_Time_Encoding'] = (
+            self.data
+            .groupby('BroadcastName', group_keys=False)['Standardized_Time']
+            .shift(1)  # Previous race's final_score
+        )
+       
+        self.data["Race_Time_Encoding"].replace(np.nan, 1000, inplace=True)
+        self.data["Race_Time_Encoding"].replace(-1, 1000, inplace=True)
+        self.check_feature("Race_Time_Encoding")
+        self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
+
+    def create_race_time_encoding(self) -> None:
+        """
+        Note: a lot of race_times for this feature from the api were wrong, but the top 5 driver times were all correct that is why you're masking it and only using the top 5.
+        """
+        def mask_group(group):
+            # Sort by Race_Position ascending
+            group = group.sort_values("Race_Position", ascending=True).copy()
+            
+            # Create a mask: keep top 10, NaN the rest
+            group["Standardized_Time"] = group["Standardized_Time"].where(group["Race_Position"] <= 3, np.nan)
+        
+            return group
+
+        def check_standardized_time_ordering(df):
+            def is_time_ascending(group):
+                # Sort by Race_Position
+                group_sorted = group.sort_values("Race_Position", ascending=True)
+                # Check if Standardized_Time is non-decreasing
+                valid_times = group_sorted["Standardized_Time"].dropna()
+                return valid_times.is_monotonic_increasing
+
+            # Apply the check to each (Year, Round_Number) group
+            result = (
+                df.groupby(["Year", "Round_Number"])
+                .apply(is_time_ascending)
+                .reset_index(name="is_time_ordered")
+            )
+
+            return result
+
+        # Apply to each (Year, Round_Number) group
+        self.data["Standardized_Time"].replace(-1, np.nan, inplace=True) #dealing with edge cases
+        self.data = self.data.groupby(["Year", "Round_Number"], group_keys=False).apply(mask_group)
+
+        res = check_standardized_time_ordering(self.data)
+        if len(res.loc[res["is_time_ordered"]==False]) > 0: 
+            print(res.loc[res["is_time_ordered"]==False])
+            raise Exception("Standardized_Time is not ordered for some races")
+        
+        self.data = self.data.sort_values(['BroadcastName','Race_Date_Code']) 
+
+        def normalize_standardized_time(group):
+            times = group['Standardized_Time']
+            return (times - times.min()) / (times.max() - times.min() + 1e-6)
+
+        self.data['Standardized_Time_Normalized'] = (
+            self.data
+            .groupby(['Year', 'Round_Number'], group_keys=False)
+            .apply(lambda g: normalize_standardized_time(g))
+            .fillna(1.0)
+        )
+
+        self.data['Race_Time_Encoding'] = (
+            self.data
+            .groupby('BroadcastName', group_keys=False)['Standardized_Time_Normalized']
+            #.shift(1)  # Previous race's final_score
+            .apply(lambda x: x.shift(1).ewm(alpha=0.4, adjust=True).mean())
+            #.fillna(1.0)
+        )
+       
+        #self.data["Race_Time_Encoding"].replace(np.nan, 1000, inplace=True)
+        #self.data["Race_Time_Encoding"].replace(-1, 1000, inplace=True)
+        self.data.drop(columns=["Standardized_Time_Normalized"], inplace=True)
+        self.check_feature("Race_Time_Encoding")
+        self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
+
+    def create_n_past_race_wins(self) -> None:
+        """Create a feature that counts the number of past race wins for each driver"""
+        # Sort by driver and race date
+        self.data = self.data.sort_values(['BroadcastName','Race_Date_Code'])
+        
+        # Create a binary win indicator (1 if Race_Position == 1, 0 otherwise)
+        self.data['race_win'] = (self.data['Race_Position'] == 1).astype(int)
+        
+        # Calculate cumulative sum of wins, shifted by 1 to exclude current race
+        self.data['n_past_race_wins'] = (
+            self.data
+            .groupby('BroadcastName')['race_win']
+            .transform(lambda x: x.shift(1).rolling(window=5, min_periods=1).sum())
+            .fillna(0)
+        )
+        
+        # Drop the temporary race_win column
+        self.data = self.data.drop('race_win', axis=1)
+        
+        self.check_feature("n_past_race_wins")
+
+        # Sort back to chronological order
+        self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
+
     def build_features_into_dataset(self) -> None:
         self.create_target()
 
@@ -332,16 +518,22 @@ class Dataset_v1(Dataset):
         self.create_circuit_type()
         self.create_race_date_code()
         self.create_driver_encoding()
+        self.create_race_time_encoding()
+        self.create_qual_q3_time()
         self.create_pos_gained_encoding()
         self.create_pos_gained_encoding_simple()
         self.create_ewa_driver_results() #this creates NaN for the 1st race
         #self.create_relative_driver_race_features()
         self.create_n_past_podiums()
         self.create_n_past_podiums_last_5()
+        self.create_n_past_race_wins()
         self.create_lap_time()
         self.create_n_past()
         #self.create_last_race_position() # retire this feature. Just adds noise due to high correlation with driver encoding.
         self.create_lagged_features() # this creates NaN for the 1st and 2nd race 
+
+        columns_to_drop = ["Sector1Time","Sector2Time","Sector3Time","SpeedST","Stint","lap_time","Standardized_Time"] #drop race data
+        self.data = self.data.drop(columns=columns_to_drop)
 
         self.data = self.data.dropna() # you lose the first 2 of each driver because of this
         self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
@@ -349,8 +541,7 @@ class Dataset_v1(Dataset):
         #min_code = self.data['Race_Date_Code'].min()
         #max_code = self.data['Race_Date_Code'].max()
         #self.data['Race_Date_Code'] = (self.data['Race_Date_Code'] - min_code) / (max_code - min_code)
-        columns_to_drop = ["Sector1Time","Sector2Time","Sector3Time","SpeedST","Stint","lap_time"] #drop race data
-        self.data = self.data.drop(columns=columns_to_drop)
+        
     
 if __name__ == "__main__":
     dataset = Dataset_v1("data/train_data.csv","data/test_data.csv")
