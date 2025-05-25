@@ -4,9 +4,13 @@ import pandas as pd
 import os 
 
 if __name__ == "__main__":
+    """
+        NOTE THAT BEFORE EVERY RACE YOU MUST: 
+        1. Ensure the starting grid is the same as the Qual_Position feature in data/new_race_data.csv
+        2. Check for rain during race. If rain then don't bet. Prob of black swan event increases too much --> too risky.s
+    """
     train_data = pd.read_csv("data/train_data_new.csv")
     test_data = pd.read_csv("data/test_data_new.csv")
-    test_data = test_data.loc[test_data["Round_Number"]<7,:] # just for testing - delete this when doing real pred
     train_test_df = pd.concat([train_data,test_data], axis=0, ignore_index=True)
     train_test_df.to_csv("data/temp_train_test_for_pred.csv",index=False)
 
@@ -24,7 +28,7 @@ if __name__ == "__main__":
     model = Model_v1(dataset,"RF_real",True)
 
     original_df = dataset.get_data()
-    original_df = original_df.loc[(original_df["Round_Number"]==7) & (original_df["Year"]==2025),:]
+    original_df = original_df.loc[(original_df["Round_Number"]==8) & (original_df["Year"]==2025),:] # change the round_number to the correct one
 
 
     #model.set_model_params(...)

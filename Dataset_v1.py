@@ -33,7 +33,7 @@ class Dataset_v1(Dataset):
             self.data.loc[index,"BroadcastName"] = drivers_dict[row["DriverNumber"]][0]
         
         self.data.loc[self.data["DriverNumber"]==12,"BroadcastName"] = "K ANTONELLI"
-        #if len(self.data["BroadcastName"].unique()) != 31: raise Exception("Wrong number of unique driver names") #uncomment this before pushing, was only to test somehting
+        #if len(self.data["BroadcastName"].unique()) != 31: raise Exception("Wrong number of unique driver names")
         
         self.data = self.data.reset_index(drop=True)
 
@@ -350,7 +350,6 @@ class Dataset_v1(Dataset):
         self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
 
     def create_qual_q3_time(self) -> None:
-        # !!NOTE: SOME OF THE TIMES IN THIS FEATURE SEEM WRONG (THIS IS AN ERROR FROM THE DATA LOADING PORTION PEICE, NOT HERE - JUST USE THIS FEATURE WITH CAUTION )
         self.data = self.data.sort_values(['Race_Date_Code'])
         def normalize_q3_times(group):
             # Keep -1 values as is, normalize only real times
