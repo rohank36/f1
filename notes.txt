@@ -96,14 +96,14 @@ Need to increase recall a lot while maintaing precision
     - boosting (using another model e.g. regression model to correct systematic errors)
     - Try different models that better handle class imbalance 
 
+You need to think about what bets are more profitable e.g. top 3 the odds aren't very profitable. So you need to look at bets which are "riskier" better odds for the average better
+but since you have an edge with your model, you should be okay to incur more risk but for more profit. 
+
 Figure out a way to liimt the number of drivers selected to be in top x (e.g. model somtimes predicts x+1 or x-1 or even x-2 drivers to be in top x)
 
 Need to figure out a way to ordinally encode the drivers, so that their ranking is relative to the other drivers performance for that race.
     - Will ordinally encoding their race times help with this?
 
-Write code to add the new test data
-
-For actually placing the bets you may need a model to choose which site to use based on the odds they have. Can do arb here? 
 
 ### To think about
 Take a momment to fundamentally understand what you're doing + the math/stats behind it.

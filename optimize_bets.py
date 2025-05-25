@@ -51,6 +51,7 @@ def group_optimize(bet_dfs:List[pd.DataFrame]) -> pd.DataFrame:
 
 def main():
     TOTAL_INVESTMENT = 10.0
+    print(f"\nTotal Investment: {TOTAL_INVESTMENT}\n")
 
     # Bet MGM
     mgm_odds = {"L NORRIS":1.16,"C LECLERC":1.28,"O PIASTRI":1.44}
@@ -88,7 +89,7 @@ def main():
     site_profit = grouped_bets.groupby('betting_site')['expected_profit'].sum()
     site_profit_df = site_profit.reset_index()
     site_profit_df.columns = ['betting_site', 'expected_profit']
-    site_profit_df['total_payout'] = TOTAL_INVESTMENT + site_profit_df['expected_profit']
+    site_profit_df['expected_total_payout'] = TOTAL_INVESTMENT + site_profit_df['expected_profit']
     site_profit_df = site_profit_df.sort_values('expected_profit', ascending=False)
     print(site_profit_df)
 
