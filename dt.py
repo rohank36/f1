@@ -9,7 +9,7 @@ from sklearn.tree import plot_tree
 import matplotlib.pyplot as plt
 
 class DT(Model):
-    def __init__(self,dataset: Dataset, name:str="DT", is_for_pred:bool):
+    def __init__(self,dataset: Dataset, is_for_pred:bool, name:str="DT"):
         super().__init__(dataset,name,is_for_pred)
         self.set_model_params(
             {

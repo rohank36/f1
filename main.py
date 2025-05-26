@@ -1,9 +1,11 @@
 from Dataset_v1 import Dataset_v1
 from Analysis import FeatureAnalysis
-from Model_v1 import Model_v1      
+from Model_v1 import Model_v1  
+from log_reg import LogReg    
+from dt import DT
 
 if __name__ == "__main__":
-   dataset = Dataset_v1("data/train_data_new.csv","data/test_data_new.csv",True)
+   dataset = Dataset_v1("data/train_data_new.csv","data/test_data_new.csv",False)
    dataset.build_features_into_dataset()
 
    analysis = FeatureAnalysis(dataset)
@@ -44,11 +46,12 @@ if __name__ == "__main__":
 
 
    dataset.set_features_for_training(features_for_training)
-   
+
    model = Model_v1(dataset,"RF_trn",False)
    model.train()
    print(model.get_feature_importance())
-   #model.get_train_metrics()
-   #model.get_val_metrics()
+
+   #model.get_train_metrics(False)
+   #model.get_val_metrics(False)
    #model.get_test_metrics()
    

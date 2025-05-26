@@ -127,17 +127,17 @@ class Model:
             "f05": f05
         }
     
-    def get_train_metrics(self) -> Dict[str,float]:
+    def get_train_metrics(self,write:bool = True) -> Dict[str,float]:
         results = self._get_metrics(self.x_trn,self.y_trn)
-        self.write_results("train",results)
+        if write: self.write_results("train",results)
         return results  
     
-    def get_val_metrics(self) -> Dict[str,float]:
+    def get_val_metrics(self,write:bool = True) -> Dict[str,float]:
         results = self._get_metrics(self.x_val,self.y_val)
-        self.write_results("val",results)
+        if write: self.write_results("val",results)
         return results
     
-    def get_test_metrics(self) -> Dict[str,float]:
+    def get_test_metrics(self,write:bool = True) -> Dict[str,float]:
         results = self._get_metrics(self.x_test,self.y_test)
-        self.write_results("test",results)
+        if write: self.write_results("test",results)
         return results
