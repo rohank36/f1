@@ -97,4 +97,7 @@ def main():
     
     
 if __name__ == "__main__":
+    """
+        This currently optimizes a podium finish bet
+    """
     main()

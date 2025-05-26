@@ -33,7 +33,9 @@ Piastri -300
 Ver -138
 Ham +600
 
-Note: Bets were observed around 4pm (qualifying already happened, earlier in the day). At roughly 11:43pm, the odds across all sites were the same as they were at 4pm.
+Note: 
+- Bets were observed around 4pm (qualifying already happened, earlier in the day). At roughly 11:43pm, the odds across all sites were the same as they were at 4pm.
+- Throughout the race the bets were the same as the day before when recorded (this is on Bet MGM)
 
 Top 3 bets have better payout becasue of lower chance compared to top 6 and top 10 bets. 
 
