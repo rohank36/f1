@@ -97,6 +97,32 @@ class ModelEval():
     def get_preds_for_driver(self,driver_name):
         return self.pretty_df.loc[self.pretty_df["Driver"]==driver_name,:]
 
+    def get_topk_acc(self, k: int = 3) -> pd.DataFrame:
+        # Group by race (year and location)
+        grouped = self.pretty_df.groupby(['Year', 'Location'])
+        
+        # For each race, calculate accuracy
+        results = []
+        for (year, location), group in grouped:
+            # Get actual top-k positions
+            actual_topk = set(group[group['Actual'] == 1]['Driver'])
+            
+            # Get predicted top-k positions based on probability
+            pred_topk = set(group.nlargest(k, 'Probability')['Driver'])
+            
+            # Calculate accuracy as proportion of overlap between predicted and actual top-k
+            overlap = len(actual_topk & pred_topk)
+            acc = overlap / k
+            
+            results.append({
+                'Location': location,
+                'Year': year,
+                'Acc': acc,
+                'n_actual': len(actual_topk) 
+            })
+        
+        return pd.DataFrame(results)
+
     def get_f1score_per_driver(self):
         f1_per_driver = self.pretty_df.groupby('Driver').apply(
         lambda group: f1_score(
@@ -126,3 +152,39 @@ class ModelEval():
         f1_per_rd['Location'] = f1_per_rd['Round_Number'].map(round_to_country)
 
         return f1_per_rd.sort_values(by='f1',ascending=False)
+
+if __name__ == "__main__":
+    dataset = Dataset_v1("data/train_data_new.csv","data/test_data_new.csv",False)
+    dataset.build_features_into_dataset()
+
+    features_for_training = [
+        #"n_past_podiums_last_5",
+        "Qual_Position",
+        #"ewa_driver_results",
+        "driver_encoding",
+        #"Race_Time_Encoding",
+        #"Qual_Q3_Time_Normal",
+        #"pos_gained_encoding_simple",
+        #"n_past_podiums",
+        #"pos_gained_encoding",
+        #"TopTeam_Red Bull Racing",
+        #"TopTeam_Ferrari",
+        #"TopTeam_McLaren",
+        #"Sprint_Race_Position",
+        #"Sprint_Qual_Position",
+        #"TopTeam_Mercedes"
+    ]
+
+    dataset.set_features_for_training(features_for_training)
+
+    model = Model_v1(dataset,"RF_trn",False)
+    model.train()
+    model_eval = ModelEval(model,dataset)
+    topk = model_eval.get_topk_acc()
+    print(topk[topk["Year"]==2025])
+    print(topk[topk["Year"]==2024])
+    print(topk["Acc"].mean())
+    print(topk["Acc"].std())
+    #print(topk[topk["Year"]==2023])
+    #print(topk[topk["Year"]==2022])
+    

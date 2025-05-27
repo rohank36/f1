@@ -29,7 +29,6 @@ class Model_v1(Model):
                 #"bootstrap": True
             }
         )
-        self.threshold = threshold
         self.is_for_pred = is_for_pred
     
     def tune_hyperparameters(self):
@@ -99,64 +98,6 @@ class Model_v1(Model):
         rf_pred_prob = self.model.predict_proba(x)[:,1]
         rf_pred = (rf_pred_prob > self.threshold).astype(int)
         return rf_pred,rf_pred_prob
-
-    def find_best_threshold(self,plot_curves=False):
-        # find best prob threshold based on precision and recall curve
-        print(f"Finding best threshold...")
-        if self.is_for_pred:
-            probs = self.model.predict_proba(self.x_trn)[:,1]
-            precisions,recalls,pr_thresholds = precision_recall_curve(self.y_trn,probs)
-        else:
-            probs = self.model.predict_proba(self.x_val)[:,1]
-            precisions,recalls,pr_thresholds = precision_recall_curve(self.y_val,probs)
-        if plot_curves:
-            plt.plot(recalls,precisions)
-            plt.xlabel("Recall")
-            plt.ylabel("Precision")
-            plt.show()
-
-        f1_scores = []
-        valid_thresholds = []
-        for p,r,t in zip(precisions[1:], recalls[1:], pr_thresholds):
-            if p+r == 0:
-                continue # skip 0 values to avoid div by 0 error
-            f1_scores.append(2 * p * r / (p + r))
-            valid_thresholds.append(t)
-        best_idx = np.argmax(f1_scores)
-        best_pr_threshold = valid_thresholds[best_idx]
-        print("Precision:", precisions[best_idx])
-        print("Recall:", recalls[best_idx])
-        print("F1 score:", f1_scores[best_idx])
-        print("Best PR threshold:", best_pr_threshold)
-        print("\n")
-
-
-        # find best prob threshold based on Youden's J statistic for fpr and tpr in roc curve 
-        if self.is_for_pred: fpr,tpr,roc_thresholds = roc_curve(self.y_trn,probs)
-        else: fpr,tpr,roc_thresholds = roc_curve(self.y_val,probs)
-        if plot_curves:
-            plt.plot(fpr,tpr)
-            plt.xlabel("False Positive Rate")
-            plt.ylabel("True Positive Rate")
-            plt.show()
-        youden_j = tpr - fpr
-        best_idx = np.argmax(youden_j)
-        best_roc_threshold = roc_thresholds[best_idx]
-        print("FPR:", fpr[best_idx])
-        print("TPR:", tpr[best_idx])
-        print("Best ROC threshold:", best_roc_threshold)
-        print("\n")
-
-        #best_threshold = (best_pr_threshold + best_roc_threshold) / 2
-        best_threshold = best_pr_threshold
-        print("Best threshold:", best_threshold)
-
-        # adjust model threshold to improve performance
-        self.set_threshold(best_threshold)
-
-    def set_threshold(self,threshold):
-        self.threshold = threshold
-        print("Threshold set to:",self.threshold)
         
     def get_feature_importance(self):
         importances = self.model.feature_importances_

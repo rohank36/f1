@@ -1,5 +1,6 @@
 from Dataset_v1 import Dataset_v1
-from Model_v1 import Model_v1      
+from Model_v1 import Model_v1  
+from imb_rf import IMB_RF    
 import pandas as pd
 import os 
 
@@ -26,6 +27,7 @@ if __name__ == "__main__":
     dataset.set_features_for_training(features_for_training)
 
     model = Model_v1(dataset,"RF_real",True)
+    #model = IMB_RF(dataset,"imb_rf_real",True)
 
     original_df = dataset.get_data()
     original_df = original_df.loc[(original_df["Round_Number"]==8) & (original_df["Year"]==2025),:] # change the round_number to the correct one

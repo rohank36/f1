@@ -3,14 +3,15 @@ from Analysis import FeatureAnalysis
 from Model_v1 import Model_v1  
 from log_reg import LogReg    
 from dt import DT
+from imb_rf import IMB_RF
 
 if __name__ == "__main__":
    dataset = Dataset_v1("data/train_data_new.csv","data/test_data_new.csv",False)
    dataset.build_features_into_dataset()
 
-   analysis = FeatureAnalysis(dataset)
-   feature_ranking = analysis.select_features()
-   print(feature_ranking)
+   #analysis = FeatureAnalysis(dataset)
+   #feature_ranking = analysis.select_features()
+   #print(feature_ranking)
 
    features_for_training = [
       #"n_past_podiums_last_5",
@@ -48,10 +49,11 @@ if __name__ == "__main__":
    dataset.set_features_for_training(features_for_training)
 
    model = Model_v1(dataset,"RF_trn",False)
+   #model = IMB_RF(dataset,"imb_rf",False)
    model.train()
    print(model.get_feature_importance())
 
-   #model.get_train_metrics(False)
-   #model.get_val_metrics(False)
-   #model.get_test_metrics()
+   model.get_train_metrics(False)
+   model.get_val_metrics(False)
+   #model.get_test_metrics(False)
    
