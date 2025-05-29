@@ -8,8 +8,10 @@ def rank_models(set_type:str):
 
 if __name__ == "__main__":
     df = rank_models("val")
+    print("VAL RESULTS:\n")
     print(df)
     print("\n\n")
     df = rank_models("test")
+    print("\nTEST RESULTS:\n")
     print(df)
     

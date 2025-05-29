@@ -85,9 +85,9 @@ TOTAL RACE TIME (how long it took them to finish the race) relative to the race 
 
 
 ### To Dos
-Try different models, including the Balanced Random Forest Classifier from the imbalanced learn library. 
+Try different models + deeply understand these models. 
 
-Refactor and clean code to make it easy to analyze/experiment/test with different features (refer to iphone notes)
+Try Walk Forward Analysis (Rolling out of sample)
 
 Need to increase recall a lot while maintaing precision
     - engineer better features (follow a system like sequential feature selection etc)
@@ -98,8 +98,6 @@ Need to increase recall a lot while maintaing precision
 
 You need to think about what bets are more profitable e.g. top 3 the odds aren't very profitable. So you need to look at bets which are "riskier" better odds for the average better
 but since you have an edge with your model, you should be okay to incur more risk but for more profit. 
-
-Figure out a way to liimt the number of drivers selected to be in top x (e.g. model somtimes predicts x+1 or x-1 or even x-2 drivers to be in top x)
 
 Need to figure out a way to ordinally encode the drivers, so that their ranking is relative to the other drivers performance for that race.
     - Will ordinally encoding their race times help with this?

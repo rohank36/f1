@@ -115,7 +115,7 @@ class Model:
             'data_type': data_type,
             'features': list(self.x_trn.columns),  # Add features list
             'model_name': self.get_model_name(),
-            **model_params,  # Unpack model parameters
+            'model_params': str(model_params),  # Convert model params to string
             **results  # Unpack original results
         }
     
@@ -132,7 +132,7 @@ class Model:
                     'data_type',
                     'features',  # Add features column
                     'model_name',
-                    *model_params.keys(),  # Unpack model parameter keys
+                    'model_params',  # Single column for model parameters
                     *results.keys()  # Unpack result keys
                 ]
             
