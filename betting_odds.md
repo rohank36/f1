@@ -46,3 +46,5 @@ pos odds (underdogs): prob = 100/odds + 100
 If driver model prob < implied prob (from betting markets) don't bet b/c neg EV
 else if driver model prob > implied prob bet b/c pos EV
 
+Tested how much the odds go down. For Spanish GP, around 2/3 days before qualifying odds for top 3 were 1.36,1.36,1.44. After qual odds went down to 1.10,1.12,1.36. Some driver's also went up quite a lot, like Leclerc went from 2.50 --> 9.00. So safest time to make a bet is after Qual.
+
