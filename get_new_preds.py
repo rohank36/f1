@@ -8,7 +8,8 @@ if __name__ == "__main__":
     """
         NOTE THAT BEFORE EVERY RACE YOU MUST: 
         1. Ensure the starting grid is the same as the Qual_Position feature in data/new_race_data.csv
-        2. Check for rain during race. If rain then don't bet. Prob of black swan event increases too much --> too risky.s
+        2. Check for rain during race. If rain then don't bet. Prob of black swan event increases too much --> too risky
+        3. Don't use optimizer anymore. Best betting method is to just put equal stake on each driver so that you if you get 2/3, you can cancel our the loss.
     """
     train_data = pd.read_csv("data/train_data_new.csv")
     test_data = pd.read_csv("data/test_data_new.csv")
@@ -22,6 +23,7 @@ if __name__ == "__main__":
     if os.path.exists(file_path):
         os.remove(file_path)
 
+    #features_for_training = ["Qual_Position","driver_encoding","n_past_podiums_last_5"]
     features_for_training = ["Qual_Position","driver_encoding"]
 
     dataset.set_features_for_training(features_for_training)
@@ -30,7 +32,7 @@ if __name__ == "__main__":
     #model = IMB_RF(dataset,"imb_rf_real",True)
 
     original_df = dataset.get_data()
-    original_df = original_df.loc[(original_df["Round_Number"]==8) & (original_df["Year"]==2025),:] # change the round_number to the correct one
+    original_df = original_df.loc[(original_df["Round_Number"]==9) & (original_df["Year"]==2025),:] # change the round_number to the correct one
 
 
     #model.set_model_params(...)

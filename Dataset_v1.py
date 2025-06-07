@@ -349,6 +349,50 @@ class Dataset_v1(Dataset):
         self.data.drop(columns=["final_score"], inplace=True)
         self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
 
+    def create_pos_gained_encoding_last_5(self) -> None:
+        self.data = self.data.sort_values(['BroadcastName', 'Race_Date_Code'])
+
+        qual_position = self.data['Qual_Position']
+        race_position = self.data['Race_Position']
+
+        # Handle -1 in race_position (assume DNF or did not start)
+        race_position = race_position.where(race_position != -1, 21)
+
+        pos_gained = qual_position - race_position
+
+        # Finishing weight calculation
+        finishing_weight = (1 / np.log(race_position + 1)) * ((21 - race_position) / 20)
+
+        # Precompute log term safely
+        safe_log_term = -np.log(finishing_weight.clip(lower=1e-6))
+
+        # Vectorized final score calculation
+        adjusted_pos_gained = (
+            (pos_gained == 0) * finishing_weight + 
+            (pos_gained > 0) * (pos_gained * finishing_weight) + 
+            (pos_gained < 0) * (pos_gained * safe_log_term * 0.05)
+        )
+
+        # Add podium bonus
+        adjusted_pos_gained += (race_position <= 3) * 1  # podium_bonus = 1
+
+        # Store final scores directly
+        self.data['final_score'] = adjusted_pos_gained
+
+        # Create pos_gained_encoding based only on the last 5 races
+        self.data['pos_gained_encoding_last_5'] = (
+            self.data
+            .groupby('BroadcastName', group_keys=False)['final_score']
+            .transform(lambda x: x.shift(1).rolling(window=5, min_periods=1).mean())
+        )
+
+        # Validate feature
+        self.check_feature("pos_gained_encoding_last_5")
+
+        # Clean up
+        self.data.drop(columns=["final_score"], inplace=True)
+        self.data = self.data.sort_values(['Race_Date_Code']).reset_index(drop=True)
+
     def create_qual_q3_time(self) -> None:
         self.data = self.data.sort_values(['Race_Date_Code'])
         def normalize_q3_times(group):
@@ -521,6 +565,7 @@ class Dataset_v1(Dataset):
         self.create_qual_q3_time()
         self.create_pos_gained_encoding()
         self.create_pos_gained_encoding_simple()
+        self.create_pos_gained_encoding_last_5()
         self.create_ewa_driver_results() #this creates NaN for the 1st race
         #self.create_relative_driver_race_features()
         self.create_n_past_podiums()

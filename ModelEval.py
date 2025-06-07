@@ -6,8 +6,6 @@ import Dataset
 import pandas as pd
 from sklearn.metrics import f1_score
 
-""" WORK IN PROGRESS """
-
 class ModelEval():
     def __init__(self, model: Model, dataset: Dataset):
         if model.x_val is None or model.y_val is None:
@@ -23,31 +21,31 @@ class ModelEval():
 
         # Get the original data
         original_data = dataset.get_data()
-        
+
+        #Features for training 
+        features_used = dataset.features_for_training
+        if features_used is None: raise Exception("Dataset has no features set...")
+
+
+        def get_df(indices,features_used,actual,pred,prob):
+            features_used.extend(["Round_Number","Year","Location","BroadcastName"])
+            data_dict = {}
+            for feature in features_used:
+                data_dict[feature] = original_data.loc[indices,feature]
+            data_dict["Actual"] = actual
+            data_dict["Predicted"] = pred
+            data_dict["Probability"] = prob
+
+            return pd.DataFrame(data_dict)
+
         # Create dataframes for each split with their respective indices
-        trn_df = pd.DataFrame({
-            "Round_Number": original_data.loc[trn_indices, "Round_Number"],
-            "Year": original_data.loc[trn_indices, "Year"],
-            "Location": original_data.loc[trn_indices, "Location"],
-            "Driver": original_data.loc[trn_indices, "BroadcastName"],
-            "Actual": model.y_trn,
-            "Predicted": pred_trn,
-            "Probability": prob_trn
-        })
-
-        val_df = pd.DataFrame({
-            "Round_Number": original_data.loc[val_indices, "Round_Number"],
-            "Year": original_data.loc[val_indices, "Year"],
-            "Location": original_data.loc[val_indices, "Location"],
-            "Driver": original_data.loc[val_indices, "BroadcastName"],
-            "Actual": model.y_val,
-            "Predicted": pred_val,
-            "Probability": prob_val
-        })
-
+        trn_df = get_df(trn_indices,features_used,model.y_trn,pred_trn,prob_trn)
+        val_df = get_df(val_indices,features_used,model.y_val,pred_val,prob_val)
+        
         # Concatenate with proper indices
         self.pretty_df = pd.concat([trn_df, val_df], axis=0)
         self.pretty_df = self.pretty_df.sort_values(['Year','Round_Number','Probability'],ascending=[True,True,False])
+        self.pretty_df = self.pretty_df.rename(columns={"BroadcastName": "Driver"})
 
     def get_df(self) -> pd.DataFrame:
         return self.pretty_df.copy()
@@ -180,11 +178,11 @@ if __name__ == "__main__":
     model = Model_v1(dataset,"RF_trn",False)
     model.train()
     model_eval = ModelEval(model,dataset)
-    topk = model_eval.get_topk_acc()
-    print(topk[topk["Year"]==2025])
-    print(topk[topk["Year"]==2024])
-    print(topk["Acc"].mean())
-    print(topk["Acc"].std())
+    #topk = model_eval.get_topk_acc()
+    #print(topk[topk["Year"]==2025])
+    #print(topk[topk["Year"]==2024])
+    #print(topk["Acc"].mean())
+    #print(topk["Acc"].std())
     #print(topk[topk["Year"]==2023])
     #print(topk[topk["Year"]==2022])
     

@@ -54,11 +54,12 @@ def main():
     print(f"\nTotal Investment: {TOTAL_INVESTMENT}\n")
 
     # Bet MGM
-    mgm_odds = {"L NORRIS":1.16,"C LECLERC":1.28,"O PIASTRI":1.44}
+    mgm_odds = {"L NORRIS":1.12,"M VERSTAPPEN":1.40,"O PIASTRI":1.10}
     mgm_odds_type = "decimal"
     mgm_betting_site = "Bet MGM"
     mgm_bets = optimize(mgm_odds,mgm_odds_type,TOTAL_INVESTMENT,mgm_betting_site)
 
+    """
     # Draft Kings
     draft_kings_odds = {"L NORRIS":-900,"C LECLERC":-500,"O PIASTRI":-400}
     draft_kings_odds_type = "american"
@@ -76,8 +77,10 @@ def main():
     bet365_odds_type = "american"
     bet365_betting_site = "Bet365"
     bet365_bets = optimize(bet365_odds,bet365_odds_type,TOTAL_INVESTMENT,bet365_betting_site)
+    """
 
-    bet_dfs = [mgm_bets,draft_kings_bets,fanduel_bets,bet365_bets]
+    #bet_dfs = [mgm_bets,draft_kings_bets,fanduel_bets,bet365_bets]
+    bet_dfs = [mgm_bets]
     grouped_bets = group_optimize(bet_dfs)
     print(grouped_bets)
 

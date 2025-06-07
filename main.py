@@ -15,7 +15,7 @@ if __name__ == "__main__":
    #print(feature_ranking)
 
    features_for_training = [
-      #"n_past_podiums_last_5",
+      "n_past_podiums_last_5",
       "Qual_Position",
       "driver_encoding",
       #"ewa_driver_results",
@@ -23,6 +23,7 @@ if __name__ == "__main__":
       #"n_past_race_wins",
       #"n_past_podiums",
       #"pos_gained_encoding",
+      #"pos_gained_encoding_last_5",
       #"TopTeam_Red Bull Racing",
       #"pos_gained_encoding_simple",
       #"Qual_Q3_Time_Normal",
@@ -49,13 +50,17 @@ if __name__ == "__main__":
 
    dataset.set_features_for_training(features_for_training)
 
-   #model = Model_v1(dataset,"RF_trn",False)
-   #model = IMB_RF(dataset,"imb_rf",False)
-   model = RUS_BOOST(dataset,"rus_boost",False)
-   model.train()
-   print(model.get_feature_importance())
+   models = [
+      Model_v1(dataset,"RF_trn",False),
+      #IMB_RF(dataset,"imb_rf",False),
+      #RUS_BOOST(dataset,"rus_boost",False)
+   ]
 
-   model.get_train_metrics(False)
-   model.get_val_metrics(False)
-   model.get_test_metrics(False)
+   for model in models:
+      model.train()
+      print(model.get_feature_importance())
+
+      model.get_train_metrics(False)
+      model.get_val_metrics(False)
+      model.get_test_metrics(False)
    
