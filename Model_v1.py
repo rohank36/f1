@@ -79,7 +79,7 @@ class Model_v1(Model):
     
         return best_params
     
-    def train(self):
+    def train(self,find_best_threshold=True):
         self.model = RandomForestClassifier(
             n_estimators = self.model_params["n_estimators"],
             max_depth = self.model_params["max_depth"],
@@ -92,7 +92,7 @@ class Model_v1(Model):
         )
         #max_samples = 20?
         self.model.fit(self.x_trn,self.y_trn)
-        self.find_best_threshold()
+        if find_best_threshold: self.find_best_threshold()
     
     def predict(self,x):
         rf_pred_prob = self.model.predict_proba(x)[:,1]
