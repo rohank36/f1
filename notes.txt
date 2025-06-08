@@ -82,7 +82,8 @@ SECTORTIMES MIGHT BE FAST FOR DRIVER THAT STILL FINISHES POORLY BECAUSE DRIVER I
 
 TOTAL RACE TIME (how long it took them to finish the race) relative to the race winner (have to think about how to encode this) is a good proxy for race pace. 
 
-
+Walk forward analysis finds that model_v1 with qual_pos and driver_encoding gets 88% acc on walk forwarded 2025 races. Better than model_v1 with qual_pos,driver_encoding,n_past_podiums_last_5 (81%). Also does better than imb_rf with qual_pos,driver_encoding which gets 77% on wf analysis.
+- TLDR: MODEL_V1 with qual_pos + driver_encoding is the best model.
 
 ### To Dos
 Try different models + deeply understand these models. 
