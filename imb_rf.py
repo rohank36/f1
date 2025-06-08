@@ -18,7 +18,7 @@ class IMB_RF(Model):
         )
         self.is_for_pred = is_for_pred
 
-    def train(self):
+    def train(self,find_best_threshold=True):
         self.model = BalancedRandomForestClassifier(
             random_state = 27,
             n_estimators = self.model_params["n_estimators"],
@@ -28,7 +28,7 @@ class IMB_RF(Model):
             max_features = self.model_params["max_features"],
         )
         self.model.fit(self.x_trn,self.y_trn)
-        self.find_best_threshold()
+        if find_best_threshold: self.find_best_threshold()
 
     def predict(self,x):
         imb_pred_prob = self.model.predict_proba(x)[:,1]
