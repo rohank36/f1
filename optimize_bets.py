@@ -54,7 +54,7 @@ def main():
     print(f"\nTotal Investment: {TOTAL_INVESTMENT}\n")
 
     # Bet MGM
-    mgm_odds = {"L NORRIS":1.12,"M VERSTAPPEN":1.40,"O PIASTRI":1.10}
+    mgm_odds = {"L NORRIS":1.65,"M VERSTAPPEN":1.25,"O PIASTRI":1.28,"G RUSSELL":1.47,"C LECLERC":9.00,"K ANTONELLI":9.00,"L HAMILTON":7.00}
     mgm_odds_type = "decimal"
     mgm_betting_site = "Bet MGM"
     mgm_bets = optimize(mgm_odds,mgm_odds_type,TOTAL_INVESTMENT,mgm_betting_site)
