@@ -30,7 +30,7 @@ if __name__ == "__main__":
     model = Model_v1(dataset,"RF_real",True)
 
     original_df = dataset.get_data()
-    original_df = original_df.loc[(original_df["Round_Number"]==12) & (original_df["Year"]==2025),:] # change the round_number to the correct one
+    original_df = original_df.loc[(original_df["Round_Number"]==13) & (original_df["Year"]==2025),:] # change the round_number to the correct one
 
 
     #model.set_model_params(...)
@@ -42,6 +42,6 @@ if __name__ == "__main__":
     results["probs"] = probs
     merged_df = pd.concat([results,original_df[['Location','Year','Round_Number','BroadcastName']]], axis=1)
     merged_df = merged_df.sort_values(['probs'],ascending=False)
-    #merged_df.to_csv("data/preds.csv",index=False)
+    merged_df.to_csv("data/preds.csv",index=False)
     print(merged_df)
     
